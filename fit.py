@@ -1,10 +1,14 @@
+import warnings
 import re
 import os
 
-import xgboost as xgb
-import numpy as np
 import sklearn.model_selection
 import sklearn.preprocessing
+import numpy as np
+
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+    import xgboost as xgb
 
 
 def load_data(filename, response_column=0):
