@@ -6,6 +6,8 @@ import sklearn.model_selection
 import sklearn.preprocessing
 import numpy as np
 
+import braintree
+
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=DeprecationWarning)
     import xgboost as xgb
@@ -46,9 +48,9 @@ def convert_to_dmatrix(data):
 def fit_gbm(data):
     """Fits a GBM to training data."""
     xgb_data = {k: convert_to_dmatrix(v) for k, v in data.items()}
-    return xgb.train({"eta": 0.3, "max_depth": 6},
+    return xgb.train({"eta": 0.5, "max_depth": 2},
                       dtrain=xgb_data["train"],
-                      num_boost_round=100,
+                      num_boost_round=20,
                       evals=[(xgb_data["train"], "train"), (xgb_data["validation"], "validation")],
                       verbose_eval=False)
 
@@ -119,5 +121,8 @@ songs = load_data("data/YearPredictionMSD.txt")
 songs = standardize_data(songs)
 num_predictors = songs["train"]["X"].shape[1]
 
-song_model = fit_gbm(songs)
-song_params = gbm_to_params(song_model, num_predictors)
+train_data = braintree.TensorFlowData(songs["train"]["X"], songs["train"]["y"])
+validation_data = braintree.TensorFlowData(songs["validation"]["X"], songs["validation"]["y"])
+model = braintree.BrainTree(num_predictors, num_trees=50, max_depth=3,
+                            batch_size=64, learning_rate=0.001)
+model.train(train_data, validation_data, training_steps=10000, print_every=100)
