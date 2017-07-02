@@ -1,4 +1,5 @@
 import datetime
+import math
 
 import numpy as np
 import tensorflow as tf
@@ -94,7 +95,7 @@ class TensorFlowModel(object):
             input_dict["dropout:0"] = 1.0
             loss = self.session.run([self.loss], feed_dict=input_dict)
             scores.append(loss)
-        return np.mean(scores)
+        return math.sqrt(np.mean(scores))
 
     def save(self, filename):
         """Save the values of all model variables to a file."""
