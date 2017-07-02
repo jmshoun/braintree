@@ -19,9 +19,9 @@ def convert_to_dmatrix(data):
 def fit_gbm(data):
     """Fits a GBM to training data."""
     xgb_data = {k: convert_to_dmatrix(v) for k, v in data.items()}
-    return xgb.train({"eta": 0.2, "max_depth": 6, "subsample": 0.5},
+    return xgb.train({"eta": 0.5, "max_depth": 4, "subsample": 0.5},
                       dtrain=xgb_data["train"],
-                      num_boost_round=500,
+                      num_boost_round=50,
                       evals=[(xgb_data["train"], "train"), (xgb_data["validation"], "validation")],
                       verbose_eval=True)
 
@@ -39,10 +39,10 @@ def gbm_to_params(model, num_predictors):
     trees = split_trees(tree_lines)
     num_trees = len(trees)
 
-    params = {"terminal_bias": np.zeros([num_trees, 2 ** max_depth]),
-              "split_bias": [np.zeros([num_trees, 2 ** depth]) for depth in range(max_depth)],
-              "split_strength": [np.zeros([num_trees, 2 ** depth]) for depth in range(max_depth)],
-              "split_weight": [np.zeros([num_trees, 2 ** depth, num_predictors])
+    params = {"terminal_bias": np.zeros([2 ** max_depth, num_trees]),
+              "split_bias": [np.zeros([2 ** depth, num_trees]) for depth in range(max_depth)],
+              "split_strength": [np.zeros([2 ** depth, num_trees]) for depth in range(max_depth)],
+              "split_weight": [np.zeros([2 ** depth, num_predictors, num_trees])
                                for depth in range(max_depth)]}
 
     for i, tree in enumerate(trees):
@@ -75,14 +75,14 @@ def parse_tree(tree, tree_number, max_depth, params):
             split_predictor = int(split_match.group("predictor"))
             split_bias = float(split_match.group("bias"))
             split_index = current_index // (2 ** (max_depth - depth))
-            params["split_bias"][depth][tree_number, split_index] = split_bias
-            params["split_weight"][depth][tree_number, split_index, split_predictor] = 1
-            params["split_strength"][depth][tree_number, split_index] = 3
+            params["split_bias"][depth][split_index, tree_number] = split_bias
+            params["split_weight"][depth][split_index, split_predictor, tree_number] = 1
+            params["split_strength"][depth][split_index, tree_number] = 3
         else:
             terminal_match = terminal_re.search(line)
             terminal_bias = float(terminal_match.group("bias"))
             for _ in range(2 ** (max_depth - depth)):
-                params["terminal_bias"][tree_number, current_index] = terminal_bias
+                params["terminal_bias"][current_index, tree_number] = terminal_bias
                 current_index += 1
 
     return params
