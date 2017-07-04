@@ -1,92 +1,6 @@
-import warnings
-import re
-import os
 import pickle
 
-import numpy as np
-
 import braintree
-
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", category=DeprecationWarning)
-    import xgboost as xgb
-
-
-def convert_to_dmatrix(data):
-    return xgb.DMatrix(data["X"], label=data["y"])
-
-
-def fit_gbm(data):
-    """Fits a GBM to training data."""
-    xgb_data = {k: convert_to_dmatrix(v) for k, v in data.items()}
-    return xgb.train({"eta": 0.5, "max_depth": 4, "subsample": 0.5},
-                      dtrain=xgb_data["train"],
-                      num_boost_round=50,
-                      evals=[(xgb_data["train"], "train"), (xgb_data["validation"], "validation")],
-                      verbose_eval=True)
-
-
-def gbm_to_params(model, num_predictors):
-    tree_filename = "tree_dump.tmp"
-    leading_tabs_re = re.compile(r"[^\t]")
-
-    model.dump_model(tree_filename)
-    with open(tree_filename, "r") as tree_file:
-        tree_lines = tree_file.read().split("\n")[:-1]
-    os.remove(tree_filename)
-
-    max_depth = max([leading_tabs_re.search(line).start() for line in tree_lines])
-    trees = split_trees(tree_lines)
-    num_trees = len(trees)
-
-    params = {"terminal_bias": np.zeros([2 ** max_depth, num_trees]),
-              "split_bias": [np.zeros([2 ** depth, num_trees]) for depth in range(max_depth)],
-              "split_strength": [np.zeros([2 ** depth, num_trees]) for depth in range(max_depth)],
-              "split_weight": [np.zeros([2 ** depth, num_predictors, num_trees])
-                               for depth in range(max_depth)]}
-
-    for i, tree in enumerate(trees):
-        params = parse_tree(tree, i, max_depth, params)
-    return params
-
-
-def split_trees(tree_lines):
-    trees = []
-    current_tree = []
-    for line in tree_lines[1:]:
-        if line.find("booster") == 0:
-            trees.append(current_tree)
-            current_tree = []
-        else:
-            current_tree.append(line)
-    trees.append(current_tree)
-    return trees
-
-
-def parse_tree(tree, tree_number, max_depth, params):
-    leading_tabs_re = re.compile(r"[^\t]")
-    split_re = re.compile(r"f(?P<predictor>[0-9]+)<(?P<bias>-?[0-9]+(\.[0-9]+)?)")
-    terminal_re = re.compile(r"leaf=(?P<bias>-?[0-9]+(\.[0-9]+)?)")
-    current_index = 0
-    for line in tree:
-        depth = leading_tabs_re.search(line).start()
-        split_match = split_re.search(line)
-        if split_match:
-            split_predictor = int(split_match.group("predictor"))
-            split_bias = float(split_match.group("bias"))
-            split_index = current_index // (2 ** (max_depth - depth))
-            params["split_bias"][depth][split_index, tree_number] = split_bias
-            params["split_weight"][depth][split_index, split_predictor, tree_number] = 1
-            params["split_strength"][depth][split_index, tree_number] = 3
-        else:
-            terminal_match = terminal_re.search(line)
-            terminal_bias = float(terminal_match.group("bias"))
-            for _ in range(2 ** (max_depth - depth)):
-                params["terminal_bias"][current_index, tree_number] = terminal_bias
-                current_index += 1
-
-    return params
-
 
 with open("data/song_matrix.p", "rb") as infile:
     songs = pickle.load(infile)
@@ -94,6 +8,7 @@ num_predictors = songs["train"]["X"].shape[1]
 
 train_data = braintree.TensorFlowData(songs["train"]["X"], songs["train"]["y"])
 validation_data = braintree.TensorFlowData(songs["validation"]["X"], songs["validation"]["y"])
-model = braintree.BrainTree(num_predictors, num_trees=50, max_depth=3,
-                            batch_size=64, learning_rate=0.001)
-model.train(train_data, validation_data, training_steps=10000, print_every=100)
+model = braintree.BrainTree(num_predictors, num_trees=5, max_depth=2,
+                            batch_size=8, learning_rate=0.01)
+model.initialize(songs["train"])
+model.train(train_data, validation_data, training_steps=1000, print_every=100)

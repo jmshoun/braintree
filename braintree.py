@@ -1,8 +1,16 @@
 import datetime
 import math
+import warnings
+import re
+import os
+import pprint
 
 import numpy as np
 import tensorflow as tf
+
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+    import xgboost as xgb
 
 
 class TensorFlowData(object):
@@ -65,6 +73,7 @@ class TensorFlowModel(object):
             training_steps: Number of batches to train.
             print_every: How often to calculate and show validation results.
         """
+
         start_time = datetime.datetime.now()
         current_step = 0
         while current_step < training_steps:
@@ -91,7 +100,7 @@ class TensorFlowModel(object):
         """
         scores = []
         while not data.has_reached_end():
-            input_dict =data.get_batch(self.batch_size)
+            input_dict = data.get_batch(self.batch_size)
             input_dict["dropout:0"] = 1.0
             loss = self.session.run([self.loss], feed_dict=input_dict)
             scores.append(loss)
@@ -126,8 +135,85 @@ class BrainTree(TensorFlowModel):
             self._build_graph()
             self.session = tf.Session(graph=self.graph)
             self.saver = tf.train.Saver()
-            self.session.run(tf.global_variables_initializer())
         self.node_names = [node.name + ":0" for node in self.graph.as_graph_def().node]
+
+    def initialize(self, train_data):
+        with self.graph.as_default():
+            self.session.run(tf.global_variables_initializer())
+
+        gbm_model = self._fit_gbm(train_data)
+        gbm_parameters = self._gbm_to_params(gbm_model)
+        with self.session.as_default():
+            self.terminal_bias.load(gbm_parameters["terminal_bias"])
+            for i in range(self.max_depth):
+                self.split_bias[i].load(gbm_parameters["split_bias"][i])
+                self.split_strength[i].load(gbm_parameters["split_strength"][i])
+                self.split_weight[i].load(gbm_parameters["split_weight"][i])
+
+    def _fit_gbm(self, train_data):
+        """Fits a GBM to training data."""
+        xgb_data = xgb.DMatrix(train_data["X"], label=train_data["y"])
+        return xgb.train({"eta": 0.5, "max_depth": self.max_depth, "subsample": 0.5},
+                         dtrain=xgb_data, num_boost_round=self.num_trees,
+                         evals=[(xgb_data, "train")],
+                         verbose_eval=True)
+
+    def _gbm_to_params(self, model):
+        tree_filename = ".tree_dump.tmp"
+        model.dump_model(tree_filename)
+        with open(tree_filename, "r") as tree_file:
+            tree_lines = tree_file.read().split("\n")[:-1]
+        trees = self._split_trees(tree_lines)
+        os.remove(tree_filename)
+
+        params = {"terminal_bias": np.zeros([2 ** self.max_depth, 1, self.num_trees]),
+                  "split_bias": [np.zeros([2 ** depth, 1, self.num_trees])
+                                 for depth in range(self.max_depth)],
+                  "split_strength": [np.zeros([2 ** depth, 1, self.num_trees]) for depth in
+                                     range(self.max_depth)],
+                  "split_weight": [np.zeros([2 ** depth, self.num_features, self.num_trees])
+                                   for depth in range(self.max_depth)]}
+
+        for i, tree in enumerate(trees):
+            params = self._parse_tree(tree, i, params)
+        return params
+
+    @staticmethod
+    def _split_trees(tree_lines):
+        trees = []
+        current_tree = []
+        for line in tree_lines[1:]:
+            if line.find("booster") == 0:
+                trees.append(current_tree)
+                current_tree = []
+            else:
+                current_tree.append(line)
+        trees.append(current_tree)
+        return trees
+
+    def _parse_tree(self, tree, tree_number, params):
+        leading_tabs_re = re.compile(r"[^\t]")
+        split_re = re.compile(r"f(?P<predictor>[0-9]+)<(?P<bias>-?[0-9]+(\.[0-9]+)?)")
+        terminal_re = re.compile(r"leaf=(?P<bias>-?[0-9]+(\.[0-9]+)?)")
+        current_index = 0
+        for line in tree:
+            depth = leading_tabs_re.search(line).start()
+            split_match = split_re.search(line)
+            if split_match:
+                split_predictor = int(split_match.group("predictor"))
+                split_bias = float(split_match.group("bias"))
+                split_index = current_index // (2 ** (self.max_depth - depth))
+                params["split_bias"][depth][split_index, 0, tree_number] = split_bias
+                params["split_weight"][depth][split_index, split_predictor, tree_number] = -1
+                params["split_strength"][depth][split_index, 0, tree_number] = 2
+            else:
+                terminal_match = terminal_re.search(line)
+                terminal_bias = float(terminal_match.group("bias"))
+                for _ in range(2 ** (self.max_depth - depth)):
+                    params["terminal_bias"][current_index, 0, tree_number] = terminal_bias
+                    current_index += 1
+
+        return params
 
     def _build_graph(self):
         self.predictors, self.response = self._build_inputs()
@@ -143,6 +229,7 @@ class BrainTree(TensorFlowModel):
         self.terminal_weight = self.random_variable([2 ** self.max_depth, self.num_features,
                                                      self.num_trees])
         self.terminal_bias = self.random_variable([2 ** self.max_depth, 1, self.num_trees])
+        self.tree_weight = self.random_variable([self.num_trees])
 
         # Optimization
         self.pred = self._build_predictions()
@@ -150,12 +237,13 @@ class BrainTree(TensorFlowModel):
         self.optimizer = tf.train.AdagradOptimizer(self.learning_rate).minimize(self.loss)
 
     def _build_predictions(self):
-        split_prob = tf.stack([self._build_split_prob(depth)
+        self.split_prob = tf.stack([self._build_split_prob(depth)
                                for depth in range(self.max_depth)], axis=3)
-        terminal_prob = tf.reduce_prod(split_prob, axis=3)
-        terminal_pred = tf.matmul(tf.gather(self.predictors, [0] * (2 ** self.max_depth)),
+        self.terminal_prob = tf.reduce_prod(self.split_prob, axis=3)
+        self.terminal_pred = tf.matmul(tf.gather(self.predictors, [0] * (2 ** self.max_depth)),
                                   self.terminal_weight) + self.terminal_bias
-        return tf.reduce_sum(terminal_prob * terminal_pred, axis=[0, 2])
+        self.tree_pred = tf.reduce_sum(self.terminal_prob * self.terminal_pred, axis=0)
+        return tf.reduce_sum(self.tree_pred, axis=1)
 
     def _build_split_prob(self, depth):
         basic_logit = tf.matmul(tf.gather(self.predictors, [0] * (2 ** depth)),
@@ -164,7 +252,10 @@ class BrainTree(TensorFlowModel):
         prob = tf.sigmoid(basic_logit * tf.exp(self.split_strength[depth]))
         prob_with_complement = tf.concat([prob, 1 - prob], axis=0)
         return tf.gather(prob_with_complement,
-                         [i for i in range(2 ** (depth + 1))] * (2 ** (self.max_depth - depth - 1)))
+                         np.repeat([i // 2 + (i % 2) * (2 ** depth)
+                                    for i in range(2 ** (depth + 1))],
+                                   (2 ** (self.max_depth - depth - 1))))
+
 
     def _build_inputs(self):
         predictors = tf.placeholder(tf.float32, shape=[1, self.batch_size, self.num_features],
