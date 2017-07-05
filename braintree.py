@@ -122,7 +122,8 @@ class TensorFlowModel(object):
 
 class BrainTree(TensorFlowModel):
     def __init__(self, num_features, num_trees, max_depth,
-                 batch_size=32, learning_rate=0.001, dropout_rate=0.5):
+                 batch_size=32, learning_rate=0.001, dropout_rate=0.5,
+                 eta=0.5, subsample=0.5):
         super().__init__()
         self.num_features = num_features
         self.num_trees = num_trees
@@ -130,6 +131,9 @@ class BrainTree(TensorFlowModel):
         self.batch_size = batch_size
         self.learning_rate = learning_rate
         self.dropout_rate = dropout_rate
+        # Xgboost initialization parameters
+        self.eta = eta
+        self.subsample = subsample
 
         with self.graph.as_default():
             self._build_graph()
@@ -153,7 +157,8 @@ class BrainTree(TensorFlowModel):
     def _fit_gbm(self, train_data):
         """Fits a GBM to training data."""
         xgb_data = xgb.DMatrix(train_data["X"], label=train_data["y"])
-        return xgb.train({"eta": 0.5, "max_depth": self.max_depth, "subsample": 0.5},
+        return xgb.train({"eta": self.eta, "max_depth": self.max_depth,
+                          "subsample": self.subsample},
                          dtrain=xgb_data, num_boost_round=self.num_trees,
                          evals=[(xgb_data, "train")],
                          verbose_eval=True)
