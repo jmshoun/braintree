@@ -3,7 +3,6 @@ import math
 import warnings
 import re
 import os
-import pprint
 
 import numpy as np
 import tensorflow as tf
@@ -123,7 +122,8 @@ class TensorFlowModel(object):
 class BrainTree(TensorFlowModel):
     def __init__(self, num_features, num_trees, max_depth,
                  batch_size=32, learning_rate=0.001, dropout_rate=0.5,
-                 eta=0.5, subsample=0.5):
+                 split_weight_stddev=0.01, terminal_weight_stddev=0.01,
+                 eta=0.5, subsample=0.5,):
         super().__init__()
         self.num_features = num_features
         self.num_trees = num_trees
@@ -131,6 +131,8 @@ class BrainTree(TensorFlowModel):
         self.batch_size = batch_size
         self.learning_rate = learning_rate
         self.dropout_rate = dropout_rate
+        self.split_weight_stddev = split_weight_stddev
+        self.terminal_weight_stddev = terminal_weight_stddev
         # Xgboost initialization parameters
         self.eta = eta
         self.subsample = subsample
@@ -176,7 +178,8 @@ class BrainTree(TensorFlowModel):
                                  for depth in range(self.max_depth)],
                   "split_strength": [np.zeros([2 ** depth, 1, self.num_trees]) for depth in
                                      range(self.max_depth)],
-                  "split_weight": [np.zeros([2 ** depth, self.num_features, self.num_trees])
+                  "split_weight": [np.random.randn(2 ** depth, self.num_features, self.num_trees)
+                                   * self.split_weight_stddev / math.sqrt(self.num_features)
                                    for depth in range(self.max_depth)]}
 
         for i, tree in enumerate(trees):
@@ -232,9 +235,10 @@ class BrainTree(TensorFlowModel):
         self.split_strength = [self.random_variable([2 ** i, 1, self.num_trees])
                                for i in range(self.max_depth)]
         self.terminal_weight = self.random_variable([2 ** self.max_depth, self.num_features,
-                                                     self.num_trees])
+                                                     self.num_trees],
+                                                    stddev=self.terminal_weight_stddev
+                                                           / math.sqrt(self.num_features))
         self.terminal_bias = self.random_variable([2 ** self.max_depth, 1, self.num_trees])
-        self.tree_weight = self.random_variable([self.num_trees])
 
         # Optimization
         self.pred = self._build_predictions()
@@ -243,10 +247,10 @@ class BrainTree(TensorFlowModel):
 
     def _build_predictions(self):
         self.split_prob = tf.stack([self._build_split_prob(depth)
-                               for depth in range(self.max_depth)], axis=3)
+                                   for depth in range(self.max_depth)], axis=3)
         self.terminal_prob = tf.reduce_prod(self.split_prob, axis=3)
         self.terminal_pred = tf.matmul(tf.gather(self.predictors, [0] * (2 ** self.max_depth)),
-                                  self.terminal_weight) + self.terminal_bias
+                                       self.terminal_weight) + self.terminal_bias
         self.tree_pred = tf.reduce_sum(self.terminal_prob * self.terminal_pred, axis=0)
         return tf.reduce_sum(self.tree_pred, axis=1)
 
@@ -260,7 +264,6 @@ class BrainTree(TensorFlowModel):
                          np.repeat([i // 2 + (i % 2) * (2 ** depth)
                                     for i in range(2 ** (depth + 1))],
                                    (2 ** (self.max_depth - depth - 1))))
-
 
     def _build_inputs(self):
         predictors = tf.placeholder(tf.float32, shape=[1, self.batch_size, self.num_features],
