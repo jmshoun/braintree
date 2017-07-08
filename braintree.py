@@ -123,7 +123,7 @@ class BrainTree(TensorFlowModel):
     def __init__(self, num_features, num_trees, max_depth,
                  batch_size=32, learning_rate=0.001, dropout_rate=0.5,
                  split_weight_stddev=0.01, terminal_weight_stddev=0.01,
-                 eta=0.5, subsample=0.5,):
+                 eta=0.5, subsample=0.5, initial_strength=2):
         super().__init__()
         self.num_features = num_features
         self.num_trees = num_trees
@@ -133,6 +133,7 @@ class BrainTree(TensorFlowModel):
         self.dropout_rate = dropout_rate
         self.split_weight_stddev = split_weight_stddev
         self.terminal_weight_stddev = terminal_weight_stddev
+        self.initial_strength = initial_strength
         # Xgboost initialization parameters
         self.eta = eta
         self.subsample = subsample
@@ -213,7 +214,7 @@ class BrainTree(TensorFlowModel):
                 split_index = current_index // (2 ** (self.max_depth - depth))
                 params["split_bias"][depth][split_index, 0, tree_number] = split_bias
                 params["split_weight"][depth][split_index, split_predictor, tree_number] = -1
-                params["split_strength"][depth][split_index, 0, tree_number] = 2
+                params["split_strength"][depth][split_index, 0, tree_number] = self.initial_strength
             else:
                 terminal_match = terminal_re.search(line)
                 terminal_bias = float(terminal_match.group("bias"))
