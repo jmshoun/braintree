@@ -7,50 +7,6 @@ import numpy as np
 import tensorflow as tf
 import xgboost as xgb
 
-class TensorFlowData(object):
-    def __init__(self, predictors, response, shuffle_each_epoch=True):
-        self.predictors = predictors
-        self.num_predictors = self.predictors.shape[1]
-        self.response = response
-
-        self.batch_index = 0
-        self.reached_end = False
-        self.num_observations = self.predictors.shape[0]
-        self.shuffle_each_epoch = shuffle_each_epoch
-
-    def get_batch(self, batch_size):
-        batch_start, batch_end = self.batch_index, self.batch_index + batch_size
-        batch_data = {"predictors:0": np.reshape(self.predictors[batch_start:batch_end, :],
-                                                 (1, batch_size, self.num_predictors)),
-                      "response:0": np.reshape(self.response[batch_start:batch_end, :],
-                                               (batch_size, ))}
-        self._update_batch_index(batch_size)
-        return batch_data
-
-    def _update_batch_index(self, batch_size):
-        self.batch_index += batch_size
-        if self.batch_index + batch_size > self.num_observations:
-            self.batch_index = 0
-            self.reached_end = True
-            if self.shuffle_each_epoch:
-                self.shuffle()
-
-    def has_reached_end(self):
-        result = self.reached_end
-        self.reached_end = False
-        return result
-
-    def reset_batch_index(self):
-        self.reached_end = False
-        self.batch_index = 0
-
-    def shuffle(self, random_seed=None):
-        if random_seed:
-            np.random.seed(random_seed)
-        new_order = np.random.permutation(self.num_observations)
-        self.predictors = self.predictors[new_order, :]
-        self.response = self.response[new_order, :]
-
 
 class TensorFlowModel(object):
     def __init__(self):
