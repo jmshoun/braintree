@@ -1,16 +1,11 @@
 import datetime
 import math
-import warnings
 import re
 import os
 
 import numpy as np
 import tensorflow as tf
-
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", category=DeprecationWarning)
-    import xgboost as xgb
-
+import xgboost as xgb
 
 class TensorFlowData(object):
     def __init__(self, predictors, response, shuffle_each_epoch=True):
