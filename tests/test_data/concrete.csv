@@ -1,3 +1,12 @@
+# Sample data for regression model testing
+# Data is from slump tests of concrete mixtures.
+#
+# Downloaded from the UCI Machine Learning Repository
+# https://archive.ics.uci.edu/ml/datasets/Concrete+Slump+Test
+#
+# Data Citation:
+# Yeh, I-Cheng, "Modeling slump flow of concrete using second-order regressions and artificial neural networks,"
+# Cement and Concrete Composites, Vol.29, No. 6, 474-480, 2007.
 cement,slag,ash,water,sp,coarse,fine,slump,flow,strength
 273,82,105,210,9,904,680,23,62,34.99
 163,149,191,180,12,843,746,0,20,41.14
