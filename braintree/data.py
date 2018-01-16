@@ -6,7 +6,6 @@ each of which has its own arcane data format requirements. The BrainTree data fo
 primarily to abstract away these difficulties.
 """
 
-import numpy as np
 import xgboost as xgb
 
 
