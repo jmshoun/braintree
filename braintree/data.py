@@ -19,8 +19,26 @@ class BrainTreeData(object):
     """
     def __init__(self, predictors, responses):
         """Default constructor."""
-        self.predictors = predictors
-        self.responses = responses
+        self.predictors = self._force_2d(predictors)
+        self.responses = self._force_2d(responses)
+        self._assert_predictors_and_responses_same_size()
+
+    @staticmethod
+    def _force_2d(x):
+        """Forces an input array to be 2-dimensional."""
+        shape = x.shape
+        if len(shape) == 1:
+            x.shape = (shape[0], 1)
+        elif len(shape) > 2:
+            raise ValueError("predictors and responses may not have more than 2 dimensions.")
+        return x
+
+    def _assert_predictors_and_responses_same_size(self):
+        """Ensures the predictors and responses have compatible dimensions."""
+        predictor_rows = self.predictors.shape[0]
+        response_rows = self.responses.shape[0]
+        if predictor_rows != response_rows:
+            raise ValueError("predictors and responses must have the same number of rows.")
 
     def to_dmatrix(self, response_number=0):
         """Creates an XGBoost DMatrix representation of the data.
