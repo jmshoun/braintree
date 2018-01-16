@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from .context import data
+from context import data
 
 
 class TestXgboost(unittest.TestCase):
