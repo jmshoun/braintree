@@ -17,14 +17,16 @@ class XgbModel(object):
         train_data (xgb.DMatrix): Training data for the model.
         validation_data (xgb.DMatrix): Validation data for the model.
         num_trees (int): Number of trees in the XGBoost model.
+        max_depth (int): Maximum depth of each tree in the model.
         model (xgb.Booster): Fitted XGBoost model.
     """
 
-    def __init__(self, train_data, validation_data=None, num_trees=50):
+    def __init__(self, train_data, validation_data=None, num_trees=50, max_depth=5):
         """Default constructor."""
         self.train_data = train_data
         self.validation_data = validation_data
         self.num_trees = num_trees
+        self.max_depth = max_depth
         self.model = None
 
     def fit(self, seed=0):
@@ -35,6 +37,8 @@ class XgbModel(object):
         """
         evaluation_pairs = [(self.train_data, "train"),
                             (self.validation_data, "validation")]
-        self.model = xgb.train({"seed": seed}, self.train_data, self.num_trees,
+        training_parameters = {"seed": seed,
+                               "max_depth": self.max_depth}
+        self.model = xgb.train(training_parameters, self.train_data, self.num_trees,
                                evals=evaluation_pairs)
         return self
