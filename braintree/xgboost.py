@@ -27,7 +27,7 @@ class XgbModel(object):
         self.num_trees = num_trees
         self.model = None
 
-    def fit(self):
+    def fit(self, seed=0):
         """Fit the model.
 
         Returns:
@@ -35,5 +35,6 @@ class XgbModel(object):
         """
         evaluation_pairs = [(self.train_data, "train"),
                             (self.validation_data, "validation")]
-        self.model = xgb.train({}, self.train_data, self.num_trees, evals=evaluation_pairs)
+        self.model = xgb.train({"seed": seed}, self.train_data, self.num_trees,
+                               evals=evaluation_pairs)
         return self
