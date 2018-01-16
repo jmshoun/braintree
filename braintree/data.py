@@ -7,6 +7,7 @@ primarily to abstract away these difficulties.
 """
 
 import xgboost as xgb
+import numpy as np
 
 
 class BrainTreeData(object):
@@ -38,6 +39,27 @@ class BrainTreeData(object):
         response_rows = self.responses.shape[0]
         if predictor_rows != response_rows:
             raise ValueError("predictors and responses must have the same number of rows.")
+
+    def split(self, split_fraction, seed=0):
+        """Splits a BrainTreeData object into two disjoint data sets.
+
+        Args:
+            split_fraction (float): The fraction of data to place in the first of the two
+                data sets.
+            seed (int): Seed for the random number generator.
+        Returns:
+            (BrainTreeData, BrainTreeData): Two data sets with the original data randomly
+                distributed between them.
+        """
+        np.random.seed(seed)
+        np.random.shuffle(self.predictors)
+        # Second call to seed to ensure permutation for predictors and responses is the same.
+        np.random.seed(seed)
+        np.random.shuffle(self.responses)
+        split_row = int(self.predictors.shape[0] * split_fraction)
+        return (BrainTreeData(self.predictors[:split_row, :], self.responses[:split_row, :]),
+                BrainTreeData(self.predictors[split_row:, :], self.responses[split_row:, :]))
+
 
     def to_dmatrix(self, response_number=0):
         """Creates an XGBoost DMatrix representation of the data.

@@ -5,7 +5,7 @@ import numpy as np
 from context import data
 
 
-class TestXgboost(unittest.TestCase):
+class TestData(unittest.TestCase):
     """Test the XGBoost DMatrix representation of the data."""
     @classmethod
     def setUpClass(cls):
@@ -20,6 +20,22 @@ class TestXgboost(unittest.TestCase):
 
     def test_output_contents(self):
         np.testing.assert_array_equal(self.xgb_data.get_label(), self.responses[:, 1])
+
+
+class TestDataSplit(unittest.TestCase):
+    """Test the split method of BrainTreeData."""
+    def test_split_dimensions(self):
+        data_ = data.BrainTreeData(np.zeros(10), np.ones(10))
+        train, test = data_.split(0.7)
+        self.assertEqual(train.predictors.shape[0], 7)
+        self.assertEqual(test.predictors.shape[0], 3)
+
+    def test_split_matches(self):
+        # Ensure that predictors and responses are still correctly paired after the split
+        data_ = data.BrainTreeData(np.arange(15), np.arange(15))
+        train, test = data_.split(0.6)
+        self.assertListEqual(train.predictors.tolist(), train.responses.tolist())
+        self.assertListEqual(test.predictors.tolist(), test.responses.tolist())
 
 
 class TestInputValidation(unittest.TestCase):
