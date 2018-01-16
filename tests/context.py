@@ -9,4 +9,4 @@ import braintree.data as data
 import braintree.xgboost as xgboost
 
 # Sample data sets for testing
-concrete = np.loadtxt("tests/test_data/concrete.csv", delimiter=",", skiprows=1)
+concrete = np.loadtxt("tests/test_data/concrete.csv", delimiter=",", skiprows=10)
