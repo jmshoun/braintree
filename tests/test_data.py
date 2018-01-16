@@ -33,17 +33,17 @@ class TestInputValidation(unittest.TestCase):
     def test_3d_input(self):
         # #-D Input in either position should be rejected out of hand.
         with self.assertRaises(ValueError):
-            data_ = data.BrainTreeData(np.zeros((3, 2, 5)), np.zeros(5))
+            data.BrainTreeData(np.zeros((3, 2, 5)), np.zeros(5))
         with self.assertRaises(ValueError):
-            data_ = data.BrainTreeData(np.zeros((3, 2)), np.zeros((5, 3, 7)))
+            data.BrainTreeData(np.zeros((3, 2)), np.zeros((5, 3, 7)))
 
     def test_mismatched_lengths(self):
         with self.assertRaises(ValueError):
-            data_ = data.BrainTreeData(np.zeros(10), np.zeros(15))
+            data.BrainTreeData(np.zeros(10), np.zeros(15))
 
     def test_response_column(self):
         data_ = data.BrainTreeData(np.zeros((25, 3)), np.zeros((25, 2)))
-        good_responses = data_.to_dmatrix(1)
+        data_.to_dmatrix(1)
         with self.assertRaises(ValueError):
             data_.to_dmatrix(-1)
         with self.assertRaises(ValueError):
