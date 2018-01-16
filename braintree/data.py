@@ -24,14 +24,14 @@ class BrainTreeData(object):
         self._assert_predictors_and_responses_same_size()
 
     @staticmethod
-    def _force_2d(x):
+    def _force_2d(array):
         """Forces an input array to be 2-dimensional."""
-        shape = x.shape
+        shape = array.shape
         if len(shape) == 1:
-            x.shape = (shape[0], 1)
+            array.shape = (shape[0], 1)
         elif len(shape) > 2:
             raise ValueError("predictors and responses may not have more than 2 dimensions.")
-        return x
+        return array
 
     def _assert_predictors_and_responses_same_size(self):
         """Ensures the predictors and responses have compatible dimensions."""
