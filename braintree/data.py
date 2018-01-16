@@ -48,5 +48,8 @@ class BrainTreeData(object):
         Returns:
             xgb.DMatrix: The data with the given response attached.
         """
+        num_responses = self.responses.shape[1]
+        if response_number < 0 or response_number >= num_responses:
+            raise ValueError("response_number must be between 0 and {}.".format(num_responses))
         response = self.responses[:, response_number]
         return xgb.DMatrix(self.predictors, label=response)

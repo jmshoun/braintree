@@ -40,3 +40,11 @@ class TestInputValidation(unittest.TestCase):
     def test_mismatched_lengths(self):
         with self.assertRaises(ValueError):
             data_ = data.BrainTreeData(np.zeros(10), np.zeros(15))
+
+    def test_response_column(self):
+        data_ = data.BrainTreeData(np.zeros((25, 3)), np.zeros((25, 2)))
+        good_responses = data_.to_dmatrix(1)
+        with self.assertRaises(ValueError):
+            data_.to_dmatrix(-1)
+        with self.assertRaises(ValueError):
+            data_.to_dmatrix(2)
