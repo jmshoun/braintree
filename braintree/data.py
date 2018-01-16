@@ -51,12 +51,16 @@ class BrainTreeData(object):
             (BrainTreeData, BrainTreeData): Two data sets with the original data randomly
                 distributed between them.
         """
+        if split_fraction <= 0 or split_fraction >= 1:
+            raise ValueError("split_fraction must be between 0 and 1.")
+        split_row = int(self.predictors.shape[0] * split_fraction)
+        if split_row == 0:
+            raise ValueError("split_value is too extreme; one data set is empty.")
         np.random.seed(seed)
         np.random.shuffle(self.predictors)
         # Second call to seed to ensure permutation for predictors and responses is the same.
         np.random.seed(seed)
         np.random.shuffle(self.responses)
-        split_row = int(self.predictors.shape[0] * split_fraction)
         return (BrainTreeData(self.predictors[:split_row, :], self.responses[:split_row, :]),
                 BrainTreeData(self.predictors[split_row:, :], self.responses[split_row:, :]))
 

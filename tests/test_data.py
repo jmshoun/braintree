@@ -37,6 +37,17 @@ class TestDataSplit(unittest.TestCase):
         self.assertListEqual(train.predictors.tolist(), train.responses.tolist())
         self.assertListEqual(test.predictors.tolist(), test.responses.tolist())
 
+    def test_split_fraction_validation(self):
+        # Ensure that the validation on split_fraction works as planned.
+        data_ = data.BrainTreeData(np.zeros(10), np.zeros(10))
+        with self.assertRaises(ValueError):
+            data_.split(-3)
+        with self.assertRaises(ValueError):
+            data_.split(1.1)
+        with self.assertRaises(ValueError):
+            # This yields zero rows in the first data set, and so is disallowed.
+            data_.split(0.08)
+
 
 class TestInputValidation(unittest.TestCase):
     """Test the runtime input validation performed in the constructor."""
