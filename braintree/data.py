@@ -12,7 +12,7 @@ import xgboost as xgb
 
 class BrainTreeData(object):
     """Data to be fed into a BrainTree model.
-    
+
     Attributes:
         predictors (numpy.ndarray): n by k numeric matrix of predictors.
         responses (numpy.ndarray): n by m numeric matrix of responses.
@@ -42,7 +42,7 @@ class BrainTreeData(object):
 
     def to_dmatrix(self, response_number=0):
         """Creates an XGBoost DMatrix representation of the data.
-        
+
         Args:
             response_number (int): The index of the column in responses to use as the
                 response. DMatrix only supports a single response value per observation.
