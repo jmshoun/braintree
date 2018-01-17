@@ -36,8 +36,10 @@ class XgbModel(object):
     TREE_DUMP_FILENAME = ".tree_dump.tmp"
     # Regular expressions for parsing XGBoost model dumps
     LEADING_TABS = re.compile(r"[^\t]")
-    SPLIT = re.compile(r"f(?P<predictor>[0-9]+)<(?P<bias>-?[0-9]+(\.[0-9]+)?)")
-    TERMINAL = re.compile(r"leaf=(?P<bias>-?[0-9]+(\.[0-9]+)?)")
+    INTEGER = r"[0-9]+"
+    FLOAT = r"-?[0-9]+(\.[0-9]+)?"
+    SPLIT = re.compile(r"f(?P<predictor>" + INTEGER + ")<(?P<bias>" + FLOAT + ")")
+    TERMINAL = re.compile(r"leaf=(?P<bias>" + FLOAT + ")")
 
     def __init__(self, train_data, validation_data=None, num_trees=50, max_depth=5):
         """Default constructor."""
