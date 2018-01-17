@@ -112,6 +112,7 @@ class XgbModel(object):
 
     def _parse_tree(self, tree, tree_ndx):
         """Parses the parameters from a single tree."""
+        # Keep track of the current index of the terminal node.
         terminal_ndx = 0
         for line in tree:
             depth = self.LEADING_TABS.search(line).start()
@@ -123,6 +124,9 @@ class XgbModel(object):
         """Parses a single terminal node of a single tree."""
         terminal_match = self.TERMINAL.search(line)
         terminal_bias = float(terminal_match.group("bias"))
+        # If the terminal node isn't at the maximum depth of the tree, then the terminal
+        # will correspond to multiple elements of the terminal bias matrix, since the
+        # terminal bias matrix is fixed-depth.
         depth_from_max = self.max_depth - depth
         for _ in range(2 ** depth_from_max):
             self.terminal_bias[terminal_ndx, 0, tree_ndx] = terminal_bias
