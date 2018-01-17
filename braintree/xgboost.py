@@ -15,7 +15,7 @@ import xgboost as xgb
 
 
 def _nans(*shape):
-    """Create a NumPy array of a given shape filled with NaNs."""
+    """Creates a NumPy array of a given shape filled with NaNs."""
     return np.full(shape, np.nan)
 
 
@@ -52,7 +52,7 @@ class XgbModel(object):
         self.split_weight, self.split_bias, self.split_strength = self._initialize_splits()
 
     def _initialize_splits(self):
-        """Initialize split matrices with appropriate dimensions and values."""
+        """Initializes split matrices with appropriate dimensions and values."""
         num_features = self.train_data.num_col()
         # There is one set of split weighs for each layer of each tree; thus the matrices.
         split_weight = []
@@ -65,7 +65,7 @@ class XgbModel(object):
         return split_weight, split_bias, split_strength
 
     def fit(self, seed=0):
-        """Fit the model.
+        """Fits the model.
 
         Returns:
             xgbModel: The fitted model.
