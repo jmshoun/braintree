@@ -27,6 +27,7 @@ class XgbModel(object):
         validation_data (xgb.DMatrix): Validation data for the model.
         num_trees (int): Number of trees in the XGBoost model.
         max_depth (int): Maximum depth of each tree in the model.
+        default_split_strength (float): Default value of split strength parameters.
         model (xgb.Booster): Fitted XGBoost model.
         terminal_bias (numpy.ndarray): Biases (constants) for values of the terminal nodes.
         split_weight (list[numpy.ndarray]): Weights for tree splits.
@@ -41,12 +42,14 @@ class XgbModel(object):
     SPLIT = re.compile(r"f(?P<predictor>" + INTEGER + ")<(?P<bias>" + FLOAT + ")")
     TERMINAL = re.compile(r"leaf=(?P<bias>" + FLOAT + ")")
 
-    def __init__(self, train_data, validation_data=None, num_trees=50, max_depth=5):
+    def __init__(self, train_data, validation_data=None, num_trees=50, max_depth=5,
+                 default_split_strength=2.0):
         """Default constructor."""
         self.train_data = train_data
         self.validation_data = validation_data
         self.num_trees = num_trees
         self.max_depth = max_depth
+        self.default_split_strength = default_split_strength
         self.model = None
         # Placeholders for extracted model parameters.
         num_terminal_nodes = 2 ** self.max_depth
@@ -129,6 +132,8 @@ class XgbModel(object):
         depth_from_max = self.max_depth - depth
         split_ndx = terminal_ndx // (2 ** depth_from_max)
         self.split_bias[depth][split_ndx, 0, tree_ndx] = split_bias
+        self.split_weight[depth][split_ndx, split_variable_ndx, tree_ndx] = -1
+        self.split_strength[depth][split_ndx, 0, tree_ndx] = self.default_split_strength
 
     def _parse_terminal(self, line, tree_ndx, terminal_ndx, depth):
         """Parses a single terminal node of a single tree."""
