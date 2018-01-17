@@ -7,6 +7,9 @@ have been bugging me for a while. Second, these classes support additional funct
 of models than vanilla XGBoost (like multiple responses and multivariate distributions).
 """
 
+import os
+import re
+
 import numpy as np
 import xgboost as xgb
 
@@ -30,6 +33,11 @@ class XgbModel(object):
         split_bias (list[numpy.ndarray]): Biases for tree splits.
         split_strength (list[numpy.ndarray]): Strengths of tree splits.
     """
+    TREE_DUMP_FILENAME = ".tree_dump.tmp"
+    # Regular expressions for parsing XGBoost model dumps
+    LEADING_TABS = re.compile(r"[^\t]")
+    SPLIT = re.compile(r"f(?P<predictor>[0-9]+)<(?P<bias>-?[0-9]+(\.[0-9]+)?)")
+    TERMINAL = re.compile(r"leaf=(?P<bias>-?[0-9]+(\.[0-9]+)?)")
 
     def __init__(self, train_data, validation_data=None, num_trees=50, max_depth=5):
         """Default constructor."""
@@ -68,4 +76,53 @@ class XgbModel(object):
                                "max_depth": self.max_depth}
         self.model = xgb.train(training_parameters, self.train_data, self.num_trees,
                                evals=evaluation_pairs)
+        self._parse_parameters()
         return self
+
+    def _parse_parameters(self):
+        """Parses the parameters of an XGBoost model from a dump of the tree lines."""
+        model_dump = self._get_model_dump()
+        trees = self._split_trees(model_dump)
+        for i, tree in enumerate(trees):
+            self._parse_tree(tree, i)
+
+    def _get_model_dump(self):
+        """Returns a list of lines from the text dump of an XGBoost model."""
+        self.model.dump_model(self.TREE_DUMP_FILENAME)
+        with open(self.TREE_DUMP_FILENAME, "r") as infile:
+            dump_lines = infile.read().split("\n")[:-1]
+        os.remove(self.TREE_DUMP_FILENAME)
+        return dump_lines
+
+    @staticmethod
+    def _split_trees(tree_lines):
+        """Splits a list of text lines from a tree dump into separate trees."""
+        trees = []
+        current_tree = []
+        for line in tree_lines[1:]:
+            if line.find("booster") == 0:
+                trees += [current_tree]
+                current_tree = []
+            else:
+                current_tree += [line]
+        trees += [current_tree]
+        return trees
+
+    def _parse_tree(self, tree, tree_ndx):
+        """Parses the parameters from a single tree."""
+        terminal_ndx = 0
+        for line in tree:
+            depth = self.LEADING_TABS.search(line).start()
+            split_match = self.SPLIT.search(line)
+            if not split_match:
+                terminal_ndx = self._parse_terminal(line, tree_ndx, terminal_ndx, depth)
+
+    def _parse_terminal(self, line, tree_ndx, terminal_ndx, depth):
+        """Parses a single terminal node of a single tree."""
+        terminal_match = self.TERMINAL.search(line)
+        terminal_bias = float(terminal_match.group("bias"))
+        depth_from_max = self.max_depth - depth
+        for _ in range(2 ** depth_from_max):
+            self.terminal_bias[terminal_ndx, 0, tree_ndx] = terminal_bias
+            terminal_ndx += 1
+        return terminal_ndx
