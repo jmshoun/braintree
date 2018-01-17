@@ -24,3 +24,15 @@ class FitTest(unittest.TestCase):
         self.assertListEqual(split_bias_shape_2, [4, 1, 25])
         split_strength_0 = list(self.model.split_strength[0].shape)
         self.assertListEqual(split_strength_0, [1, 1, 25])
+
+    def test_terminal_bias_parsing(self):
+        # All test values that follow were verified by manual inspection of tree dump.
+        self.assertAlmostEqual(self.model.terminal_bias[0, 0, 0], 3.8625)
+        # Parse negative values?
+        self.assertAlmostEqual(self.model.terminal_bias[8, 0, 2], -0.040793)
+        # Parse the last value?
+        self.assertAlmostEqual(self.model.terminal_bias[15, 0, 24], 0.118218)
+
+    def test_terminal_bias_assignment(self):
+        for i in range(8, 12):
+            self.assertAlmostEqual(self.model.terminal_bias[i, 0, 5], 1.72913)
