@@ -117,8 +117,18 @@ class XgbModel(object):
         for line in tree:
             depth = self.LEADING_TABS.search(line).start()
             split_match = self.SPLIT.search(line)
-            if not split_match:
+            if split_match:
+                self._parse_split(split_match, tree_ndx, terminal_ndx, depth)
+            else:
                 terminal_ndx = self._parse_terminal(line, tree_ndx, terminal_ndx, depth)
+
+    def _parse_split(self, split_match, tree_ndx, terminal_ndx, depth):
+        """Parses a single split of a single tree."""
+        split_variable_ndx = int(split_match.group("predictor"))
+        split_bias = float(split_match.group("bias"))
+        depth_from_max = self.max_depth - depth
+        split_ndx = terminal_ndx // (2 ** depth_from_max)
+        self.split_bias[depth][split_ndx, 0, tree_ndx] = split_bias
 
     def _parse_terminal(self, line, tree_ndx, terminal_ndx, depth):
         """Parses a single terminal node of a single tree."""

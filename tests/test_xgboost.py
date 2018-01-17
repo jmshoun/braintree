@@ -36,3 +36,11 @@ class FitTest(unittest.TestCase):
     def test_terminal_bias_assignment(self):
         for i in range(8, 12):
             self.assertAlmostEqual(self.model.terminal_bias[i, 0, 5], 1.72913)
+
+    def test_split_bias_parsing(self):
+        # Check several levels in the same tree
+        self.assertAlmostEqual(self.model.split_bias[0][0, 0, 0], 126.5)
+        self.assertAlmostEqual(self.model.split_bias[1][1, 0, 0], 187.5)
+        self.assertAlmostEqual(self.model.split_bias[3][4, 0, 0], 190.5)
+        # Parse last value?
+        self.assertAlmostEqual(self.model.split_bias[3][3, 0, 24], 177.95)
