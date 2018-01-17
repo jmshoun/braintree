@@ -44,3 +44,7 @@ class FitTest(unittest.TestCase):
         self.assertAlmostEqual(self.model.split_bias[3][4, 0, 0], 190.5)
         # Parse last value?
         self.assertAlmostEqual(self.model.split_bias[3][3, 0, 24], 177.95)
+
+    def test_split_bias_default_values(self):
+        # This split doesn't appear in the tree, so should have a bias of 0.
+        self.assertAlmostEqual(self.model.split_bias[2][3, 0, 4], 0.0)

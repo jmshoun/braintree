@@ -62,7 +62,7 @@ class XgbModel(object):
         split_strength = []
         for depth in range(self.max_depth):
             split_weight += [np.zeros((2 ** depth, num_features, self.num_trees))]
-            split_bias += [_nans(2 ** depth, 1, self.num_trees)]
+            split_bias += [np.zeros((2 ** depth, 1, self.num_trees))]
             split_strength += [_nans(2 ** depth, 1, self.num_trees)]
         return split_weight, split_bias, split_strength
 
