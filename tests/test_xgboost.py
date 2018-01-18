@@ -48,3 +48,30 @@ class FitTest(unittest.TestCase):
     def test_split_bias_default_values(self):
         # This split doesn't appear in the tree, so should have a bias of 0.
         self.assertAlmostEqual(self.model.split_bias[2][3, 0, 4], 0.0)
+
+    def test_split_weight_values(self):
+        # Test the first split
+        self.assertEqual(self.model.split_weight[0][0, 1, 0], -1)
+        for i in [0, 2, 3, 4, 5, 6]:
+            self.assertEqual(self.model.split_weight[0][0, i, 0], 0)
+        # Test a middle split
+        self.assertEqual(self.model.split_weight[2][1, 5, 1], -1)
+        for i in [0, 1, 2, 3, 4, 6]:
+            self.assertEqual(self.model.split_weight[2][1, i, 1], 0)
+        # Test the last split
+        self.assertEqual(self.model.split_weight[3][3, 3, 24], -1)
+        for i in [0, 1, 2, 4, 5, 6]:
+            self.assertEqual(self.model.split_weight[3][3, i, 24], 0)
+
+    def test_split_weight_defaults(self):
+        # Test a split that's never reached
+        for i in range(7):
+            self.assertEqual(self.model.split_weight[2][0, i, 8], 0)
+
+    def test_split_strength_values(self):
+        self.assertEqual(self.model.split_strength[0][0, 0, 0], self.model.default_split_strength)
+        self.assertEqual(self.model.split_strength[2][1, 0, 1], self.model.default_split_strength)
+        self.assertEqual(self.model.split_strength[3][3, 0, 24], self.model.default_split_strength)
+
+    def test_split_strength_defauls(self):
+        self.assertEqual(self.model.split_strength[2][0, 0, 8], 0)
