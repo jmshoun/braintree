@@ -14,9 +14,9 @@ import numpy as np
 import xgboost as xgb
 
 
-def _nans(*shape):
+def _zeros(*shape):
     """Creates a NumPy array of a given shape filled with NaNs."""
-    return np.full(shape, np.nan)
+    return np.zeros(shape)
 
 
 class XgbModel(object):
@@ -53,7 +53,7 @@ class XgbModel(object):
         self.model = None
         # Placeholders for extracted model parameters.
         num_terminal_nodes = 2 ** self.max_depth
-        self.terminal_bias = _nans(num_terminal_nodes, 1, self.num_trees)
+        self.terminal_bias = _zeros(num_terminal_nodes, 1, self.num_trees)
         self.split_weight, self.split_bias, self.split_strength = self._initialize_splits()
 
     def _initialize_splits(self):
@@ -64,9 +64,9 @@ class XgbModel(object):
         split_bias = []
         split_strength = []
         for depth in range(self.max_depth):
-            split_weight += [np.zeros((2 ** depth, num_features, self.num_trees))]
-            split_bias += [np.zeros((2 ** depth, 1, self.num_trees))]
-            split_strength += [_nans(2 ** depth, 1, self.num_trees)]
+            split_weight += [_zeros(2 ** depth, num_features, self.num_trees)]
+            split_bias += [_zeros(2 ** depth, 1, self.num_trees)]
+            split_strength += [_zeros(2 ** depth, 1, self.num_trees)]
         return split_weight, split_bias, split_strength
 
     def fit(self, seed=0):
