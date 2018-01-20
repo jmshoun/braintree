@@ -6,6 +6,8 @@ each of which has its own arcane data format requirements. The BrainTree data fo
 primarily to abstract away these difficulties.
 """
 
+import copy
+
 import xgboost as xgb
 import numpy as np
 
@@ -16,12 +18,37 @@ class BrainTreeData(object):
     Attributes:
         predictors (numpy.ndarray): n by k numeric matrix of predictors.
         responses (numpy.ndarray): n by m numeric matrix of responses.
+        standard_factors (dict): Dictionary of factors to standardize raw data by columns.
     """
     def __init__(self, predictors, responses):
         """Default constructor."""
         self.predictors = self._force_2d(predictors)
         self.responses = self._force_2d(responses)
         self._assert_predictors_and_responses_same_size()
+        self.standard_factors = {}
+
+    def standardize(self, standard_factors=None):
+        """Standardize the data so it has zero mean and unit variance.
+
+        Args:
+            standard_factors (dict): If provided, use these factors for standardization
+                instead of computing the factors from the data itself.
+        """
+        if standard_factors is not None:
+            self.standard_factors = copy.deepcopy(standard_factors)
+        else:
+            self.standard_factors = self._compute_standard_factors()
+        self.predictors = ((self.predictors - self.standard_factors["predictor_means"])
+                           / self.standard_factors["predictor_sds"])
+        self.responses = ((self.responses - self.standard_factors["response_means"])
+                          / self.standard_factors["response_sds"])
+
+    def _compute_standard_factors(self):
+        """Compute standardization factors from the data itself."""
+        return {"predictor_means": np.mean(self.predictors, axis=0),
+                "predictor_sds": np.std(self.predictors, axis=0),
+                "response_means": np.mean(self.responses, axis=0),
+                "response_sds": np.std(self.responses, axis=0)}
 
     @staticmethod
     def _force_2d(array):
@@ -63,7 +90,6 @@ class BrainTreeData(object):
         np.random.shuffle(self.responses)
         return (BrainTreeData(self.predictors[:split_row, :], self.responses[:split_row, :]),
                 BrainTreeData(self.predictors[split_row:, :], self.responses[split_row:, :]))
-
 
     def to_dmatrix(self, response_number=0):
         """Creates an XGBoost DMatrix representation of the data.

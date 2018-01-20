@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 
 from context import data
-
+from context import concrete
 
 class TestData(unittest.TestCase):
     """Test the XGBoost DMatrix representation of the data."""
@@ -75,3 +75,32 @@ class TestInputValidation(unittest.TestCase):
             data_.to_dmatrix(-1)
         with self.assertRaises(ValueError):
             data_.to_dmatrix(2)
+
+
+class TestDataStandardization(unittest.TestCase):
+    def test_default_standardization(self):
+        data_ = data.BrainTreeData(concrete[:, :7], concrete[:, 7:])
+        data_.standardize()
+        np.testing.assert_almost_equal(np.mean(data_.predictors, axis=0), [0] * 7)
+        np.testing.assert_almost_equal(np.mean(data_.responses, axis=0), [0] * 3)
+        np.testing.assert_almost_equal(np.std(data_.predictors, axis=0), [1] * 7)
+        np.testing.assert_almost_equal(np.std(data_.responses, axis=0), [1] * 3)
+
+    def test_alternate_standardization(self):
+        # Compute true means and sds for reference
+        data_ = data.BrainTreeData(concrete[:, :7], concrete[:, 7:])
+        predictor_means = np.mean(data_.predictors, axis=0)
+        predictor_sds = np.std(data_.predictors, axis=0)
+        response_means = np.mean(data_.responses, axis=0)
+        response_sds = np.std(data_.responses, axis=0)
+        # Standardize with forced values
+        data_.standardize({"predictor_means": [10] * 7,
+                           "predictor_sds": [5] * 7,
+                           "response_means": [10] * 3,
+                           "response_sds": [5] * 3})
+        # Assert that the standardization used the supplied parameters
+        np.testing.assert_almost_equal(np.mean(data_.predictors, axis=0),
+                                       (predictor_means - 10) / 5)
+        np.testing.assert_almost_equal(np.std(data_.predictors, axis=0), predictor_sds / 5)
+        np.testing.assert_almost_equal(np.mean(data_.responses, axis=0), (response_means - 10) / 5)
+        np.testing.assert_almost_equal(np.std(data_.responses, axis=0), response_sds / 5)
