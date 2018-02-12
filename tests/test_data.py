@@ -83,7 +83,7 @@ class TestInputValidation(unittest.TestCase):
 class TestDataGenerator(unittest.TestCase):
     """Tests the data generator method."""
     def test_generator(self):
-        data_ = data.BrainTreeData(self._x2_data(0, 12), np.arange(12))
+        data_ = data.BrainTreeData(self._x2_data(0, 12).reshape([12, 2]), np.arange(12))
         batch_1, batch_2, batch_3 = data_.to_array_generator(4)
         # Check predictors
         np.testing.assert_array_equal(batch_1[0], self._x2_data(0, 4))
@@ -97,7 +97,7 @@ class TestDataGenerator(unittest.TestCase):
     @staticmethod
     def _x2_data(start, stop):
         col_1 = np.arange(start, stop)
-        return np.stack([col_1, col_1 * 2]).T
+        return np.stack([col_1, col_1 * 2]).T.reshape([1, stop - start, 2])
 
 
 class TestDataStandardization(unittest.TestCase):

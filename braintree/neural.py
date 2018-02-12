@@ -32,6 +32,15 @@ class NeuralModel(object):
             self._build_graph()
             self.session = tf.Session(graph=self.graph)
             self.saver = tf.train.Saver()
+            self.session.run(tf.global_variables_initializer())
+
+    def predict(self, data):
+        predictions = []
+        for predictors, _ in data.to_array_generator(self.batch_size):
+            input_dict = {"predictors:0": predictors, "dropout:0": 1.0}
+            (batch_predictions, ) = self.session.run([self.predictions], feed_dict=input_dict)
+            predictions.append(batch_predictions)
+        return np.concatenate(predictions)
 
     def _build_graph(self):
         self.predictors = tf.placeholder(tf.float32, shape=[1, self.batch_size, self.num_features],

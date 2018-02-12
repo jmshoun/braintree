@@ -107,8 +107,10 @@ class BrainTreeData(object):
         """
         ndx = 0
         num_observations = self.predictors.shape[0]
+        num_features = self.predictors.shape[1]
+        new_predictor_shape = [1, batch_size, num_features]
         while ndx + batch_size <= num_observations:
-            yield (self.predictors[ndx:(ndx + batch_size), :],
+            yield (self.predictors[ndx:(ndx + batch_size), :].reshape(new_predictor_shape),
                    self.responses[ndx:(ndx + batch_size), response_number])
             ndx += batch_size
 
