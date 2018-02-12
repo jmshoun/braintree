@@ -27,6 +27,16 @@ class BrainTreeData(object):
         self._assert_predictors_and_responses_same_size()
         self.standard_factors = {}
 
+    @property
+    def num_observations(self):
+        """The number of observations in the data set."""
+        return self.predictors.shape[0]
+
+    @property
+    def num_features(self):
+        """The number of features (predictors) in the data set."""
+        return self.predictors.shape[1]
+
     def standardize(self, standard_factors=None):
         """Standardize the data so it has zero mean and unit variance.
 
@@ -96,11 +106,13 @@ class BrainTreeData(object):
         np.random.seed(seed)
         np.random.shuffle(self.responses)
 
-    def to_array_generator(self, batch_size, response_number=0):
+    def to_array_generator(self, batch_size, all_=True, response_number=0):
         """Creates a generator that iterates over the data set and yields batch-sized ndarrays.
 
         Args:
             batch_size (int): The size of each batch.
+            all_ (bool): If True, return every observation. Otherwise, return the most observations
+                that are cleanly divisble by the batch size.
             response_number (int): The index of the response to return.
         Returns:
             Generator of (predictor, response) ndarray pairs.
@@ -113,6 +125,13 @@ class BrainTreeData(object):
             yield (self.predictors[ndx:(ndx + batch_size), :].reshape(new_predictor_shape),
                    self.responses[ndx:(ndx + batch_size), response_number])
             ndx += batch_size
+        if ndx < num_observations and all_:
+            remainder_shape = [1, num_observations % batch_size, num_features]
+            num_fills = batch_size - (num_observations % batch_size)
+            fill_predictors = np.zeros((1, num_fills, num_features))
+            fill_responses = np.zeros((num_fills, ))
+            yield (np.hstack([self.predictors[ndx:, :].reshape(remainder_shape), fill_predictors]),
+                   np.hstack([self.responses[ndx:, response_number], fill_responses]))
 
     def to_dmatrix(self, response_number=0):
         """Creates an XGBoost DMatrix representation of the data.

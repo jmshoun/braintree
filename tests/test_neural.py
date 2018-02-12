@@ -16,4 +16,4 @@ class NeuralTest(unittest.TestCase):
     def test_model_predictions(self):
         model_ = neural.NeuralModel(7)
         predictions = model_.predict(concrete_train)
-        self.assertListEqual(predictions.tolist(), [0.] * 64)
+        self.assertListEqual(predictions.tolist(), [0.] * 72)

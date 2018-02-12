@@ -40,7 +40,8 @@ class NeuralModel(object):
             input_dict = {"predictors:0": predictors, "dropout:0": 1.0}
             (batch_predictions, ) = self.session.run([self.predictions], feed_dict=input_dict)
             predictions.append(batch_predictions)
-        return np.concatenate(predictions)
+        full_predictions = np.concatenate(predictions)
+        return full_predictions[:data.num_observations]
 
     def _build_graph(self):
         self.predictors = tf.placeholder(tf.float32, shape=[1, self.batch_size, self.num_features],
