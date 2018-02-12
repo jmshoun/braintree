@@ -1,18 +1,18 @@
 import unittest
 
 from context import data
-from context import xgboost
+from context import tree
 from context import concrete
 
 concrete_data = data.BrainTreeData(concrete[:, :7], concrete[:, 7:])
 concrete_train, concrete_test = concrete_data.split(0.7)
 
 
-class FitTest(unittest.TestCase):
+class TreeTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.model = xgboost.XgbModel(concrete_train.to_dmatrix(), concrete_test.to_dmatrix(),
-                                     max_depth=4, num_trees=25)
+        cls.model = tree.TreeModel(concrete_train.to_dmatrix(), concrete_test.to_dmatrix(),
+                                   max_depth=4, num_trees=25)
         cls.model.fit()
 
     def test_parameter_matrix_dimensions(self):

@@ -19,7 +19,7 @@ def _zeros(*shape):
     return np.zeros(shape)
 
 
-class XgbModel(object):
+class TreeModel(object):
     """Wrapper around a basic XGBoost model.
 
     Attributes:
