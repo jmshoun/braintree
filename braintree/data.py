@@ -67,29 +67,31 @@ class BrainTreeData(object):
         if predictor_rows != response_rows:
             raise ValueError("predictors and responses must have the same number of rows.")
 
-    def split(self, split_fraction, seed=0):
+    def split(self, split_fraction):
         """Splits a BrainTreeData object into two disjoint data sets.
 
         Args:
             split_fraction (float): The fraction of data to place in the first of the two
                 data sets.
-            seed (int): Seed for the random number generator.
         Returns:
-            (BrainTreeData, BrainTreeData): Two data sets with the original data randomly
-                distributed between them.
+            (BrainTreeData, BrainTreeData): Two data sets with the original data split between them.
         """
         if split_fraction <= 0 or split_fraction >= 1:
             raise ValueError("split_fraction must be between 0 and 1.")
         split_row = int(self.predictors.shape[0] * split_fraction)
         if split_row == 0:
             raise ValueError("split_value is too extreme; one data set is empty.")
+        return (BrainTreeData(self.predictors[:split_row, :], self.responses[:split_row, :]),
+                BrainTreeData(self.predictors[split_row:, :], self.responses[split_row:, :]))
+
+    def shuffle(self, seed=0):
+        """Randomly shuffles the order of the observations in the data set."""
         np.random.seed(seed)
         np.random.shuffle(self.predictors)
         # Second call to seed to ensure permutation for predictors and responses is the same.
         np.random.seed(seed)
         np.random.shuffle(self.responses)
-        return (BrainTreeData(self.predictors[:split_row, :], self.responses[:split_row, :]),
-                BrainTreeData(self.predictors[split_row:, :], self.responses[split_row:, :]))
+
 
     def to_dmatrix(self, response_number=0):
         """Creates an XGBoost DMatrix representation of the data.

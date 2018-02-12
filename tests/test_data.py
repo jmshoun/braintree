@@ -30,13 +30,6 @@ class TestDataSplit(unittest.TestCase):
         self.assertEqual(train.predictors.shape[0], 7)
         self.assertEqual(test.predictors.shape[0], 3)
 
-    def test_split_matches(self):
-        # Ensure that predictors and responses are still correctly paired after the split
-        data_ = data.BrainTreeData(np.arange(15), np.arange(15))
-        train, test = data_.split(0.6)
-        self.assertListEqual(train.predictors.tolist(), train.responses.tolist())
-        self.assertListEqual(test.predictors.tolist(), test.responses.tolist())
-
     def test_split_fraction_validation(self):
         # Ensure that the validation on split_fraction works as planned.
         data_ = data.BrainTreeData(np.zeros(10), np.zeros(10))
@@ -47,6 +40,16 @@ class TestDataSplit(unittest.TestCase):
         with self.assertRaises(ValueError):
             # This yields zero rows in the first data set, and so is disallowed.
             data_.split(0.08)
+
+
+class TestDataShuffle(unittest.TestCase):
+    """Test the shuffle method of BrainTreeData."""
+    def test_split_matches(self):
+        # Ensure that predictors and responses are still correctly paired after the split
+        data_ = data.BrainTreeData(np.arange(15), np.arange(15))
+        data_.shuffle()
+        self.assertListEqual(data_.predictors.tolist(), data_.responses.tolist())
+        self.assertListEqual(data_.predictors.tolist(), data_.responses.tolist())
 
 
 class TestInputValidation(unittest.TestCase):
