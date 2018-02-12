@@ -6,7 +6,7 @@ from context import data
 from context import concrete
 
 class TestData(unittest.TestCase):
-    """Test the XGBoost DMatrix representation of the data."""
+    """Tests the XGBoost DMatrix representation of the data."""
     @classmethod
     def setUpClass(cls):
         cls.predictors = np.zeros((10, 4))
@@ -23,7 +23,7 @@ class TestData(unittest.TestCase):
 
 
 class TestDataSplit(unittest.TestCase):
-    """Test the split method of BrainTreeData."""
+    """Tests the split method of BrainTreeData."""
     def test_split_dimensions(self):
         data_ = data.BrainTreeData(np.zeros(10), np.ones(10))
         train, test = data_.split(0.7)
@@ -43,7 +43,7 @@ class TestDataSplit(unittest.TestCase):
 
 
 class TestDataShuffle(unittest.TestCase):
-    """Test the shuffle method of BrainTreeData."""
+    """Tests the shuffle method of BrainTreeData."""
     def test_split_matches(self):
         # Ensure that predictors and responses are still correctly paired after the split
         data_ = data.BrainTreeData(np.arange(15), np.arange(15))
@@ -53,7 +53,7 @@ class TestDataShuffle(unittest.TestCase):
 
 
 class TestInputValidation(unittest.TestCase):
-    """Test the runtime input validation performed in the constructor."""
+    """Tests the runtime input validation performed in the constructor."""
     def test_2d_coercion(self):
         # 1-D inputs should be coerced to 2-D.
         data_ = data.BrainTreeData(np.zeros(20), np.ones(20))
@@ -81,7 +81,7 @@ class TestInputValidation(unittest.TestCase):
 
 
 class TestDataGenerator(unittest.TestCase):
-    """Test the data generator method."""
+    """Tests the data generator method."""
     def test_generator(self):
         data_ = data.BrainTreeData(self._x2_data(0, 12), np.arange(12))
         batch_1, batch_2, batch_3 = data_.to_array_generator(4)
@@ -101,6 +101,7 @@ class TestDataGenerator(unittest.TestCase):
 
 
 class TestDataStandardization(unittest.TestCase):
+    """Tests data standardization method."""
     def test_default_standardization(self):
         data_ = data.BrainTreeData(concrete[:, :7], concrete[:, 7:])
         data_.standardize()
