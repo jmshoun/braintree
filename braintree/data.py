@@ -22,8 +22,8 @@ class BrainTreeData(object):
     """
     def __init__(self, predictors, responses):
         """Default constructor."""
-        self.predictors = self._force_2d(predictors)
-        self.responses = self._force_2d(responses)
+        self.predictors = self._force_2d(predictors.copy())
+        self.responses = self._force_2d(responses.copy())
         self._assert_predictors_and_responses_same_size()
         self.standard_factors = {}
 
