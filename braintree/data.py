@@ -85,13 +85,32 @@ class BrainTreeData(object):
                 BrainTreeData(self.predictors[split_row:, :], self.responses[split_row:, :]))
 
     def shuffle(self, seed=0):
-        """Randomly shuffles the order of the observations in the data set."""
+        """Randomly shuffles the order of the observations in the data set.
+        
+        Args:
+            seed (int): Seed to pass to the NumPy random number generator.
+        """
         np.random.seed(seed)
         np.random.shuffle(self.predictors)
         # Second call to seed to ensure permutation for predictors and responses is the same.
         np.random.seed(seed)
         np.random.shuffle(self.responses)
 
+    def to_array_generator(self, batch_size, response_number=0):
+        """Creates a generator that iterates over the data set and yields batch-sized ndarrays.
+        
+        Args:
+            batch_size (int): The size of each batch.
+            response_number (int): The index of the response to return.
+        Returns:
+            Generator of (predictor, response) ndarray pairs.
+        """
+        ndx = 0
+        num_observations = self.predictors.shape[0]
+        while ndx + batch_size <= num_observations:
+            yield (self.predictors[ndx:(ndx + batch_size), :],
+                   self.responses[ndx:(ndx + batch_size), response_number])
+            ndx += batch_size
 
     def to_dmatrix(self, response_number=0):
         """Creates an XGBoost DMatrix representation of the data.
