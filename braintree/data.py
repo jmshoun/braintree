@@ -86,7 +86,7 @@ class BrainTreeData(object):
 
     def shuffle(self, seed=0):
         """Randomly shuffles the order of the observations in the data set.
-        
+
         Args:
             seed (int): Seed to pass to the NumPy random number generator.
         """
@@ -98,7 +98,7 @@ class BrainTreeData(object):
 
     def to_array_generator(self, batch_size, response_number=0):
         """Creates a generator that iterates over the data set and yields batch-sized ndarrays.
-        
+
         Args:
             batch_size (int): The size of each batch.
             response_number (int): The index of the response to return.
