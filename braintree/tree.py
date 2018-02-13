@@ -78,9 +78,10 @@ class TreeModel(object):
         evaluation_pairs = [(self.train_data, "train"),
                             (self.validation_data, "validation")]
         training_parameters = {"seed": seed,
-                               "max_depth": self.max_depth}
+                               "max_depth": self.max_depth,
+                               "silent": 1}
         self.model = xgb.train(training_parameters, self.train_data, self.num_trees,
-                               evals=evaluation_pairs)
+                               evals=evaluation_pairs, verbose_eval=False)
         self._parse_parameters()
         return self
 
