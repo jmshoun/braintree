@@ -28,23 +28,23 @@ class TreeTest(unittest.TestCase):
 
     def test_terminal_bias_parsing(self):
         # All test values that follow were verified by manual inspection of tree dump.
-        self.assertAlmostEqual(self.model.terminal_bias[0, 0, 0], 3.8625)
+        self.assertAlmostEqual(self.model.terminal_bias[0, 0, 0], 3.975)
         # Parse negative values?
-        self.assertAlmostEqual(self.model.terminal_bias[8, 0, 2], -0.040793)
+        self.assertAlmostEqual(self.model.terminal_bias[8, 0, 4], -0.333475)
         # Parse the last value?
-        self.assertAlmostEqual(self.model.terminal_bias[15, 0, 24], 0.118218)
+        self.assertAlmostEqual(self.model.terminal_bias[15, 0, 24], -0.126356)
 
     def test_terminal_bias_assignment(self):
         for i in range(8, 12):
-            self.assertAlmostEqual(self.model.terminal_bias[i, 0, 5], 1.72913)
+            self.assertAlmostEqual(self.model.terminal_bias[i, 0, 5], 1.75431)
 
     def test_split_bias_parsing(self):
         # Check several levels in the same tree
         self.assertAlmostEqual(self.model.split_bias[0][0, 0, 0], 126.5)
         self.assertAlmostEqual(self.model.split_bias[1][1, 0, 0], 187.5)
-        self.assertAlmostEqual(self.model.split_bias[3][4, 0, 0], 190.5)
+        self.assertAlmostEqual(self.model.split_bias[3][7, 0, 0], 220.5)
         # Parse last value?
-        self.assertAlmostEqual(self.model.split_bias[3][3, 0, 24], 177.95)
+        self.assertAlmostEqual(self.model.split_bias[3][7, 0, 24], 9.25)
 
     def test_split_bias_default_values(self):
         # This split doesn't appear in the tree, so should have a bias of 0.
@@ -56,13 +56,13 @@ class TreeTest(unittest.TestCase):
         for i in [0, 2, 3, 4, 5, 6]:
             self.assertEqual(self.model.split_weight[0][0, i, 0], 0)
         # Test a middle split
-        self.assertEqual(self.model.split_weight[2][1, 5, 1], -1)
-        for i in [0, 1, 2, 3, 4, 6]:
+        self.assertEqual(self.model.split_weight[2][1, 4, 1], -1)
+        for i in [0, 1, 2, 3, 5, 6]:
             self.assertEqual(self.model.split_weight[2][1, i, 1], 0)
         # Test the last split
-        self.assertEqual(self.model.split_weight[3][3, 3, 24], -1)
-        for i in [0, 1, 2, 4, 5, 6]:
-            self.assertEqual(self.model.split_weight[3][3, i, 24], 0)
+        self.assertEqual(self.model.split_weight[3][7, 4, 24], -1)
+        for i in [0, 1, 2, 3, 5, 6]:
+            self.assertEqual(self.model.split_weight[3][7, i, 24], 0)
 
     def test_split_weight_defaults(self):
         # Test a split that's never reached
@@ -74,5 +74,5 @@ class TreeTest(unittest.TestCase):
         self.assertEqual(self.model.split_strength[2][1, 0, 1], self.model.default_split_strength)
         self.assertEqual(self.model.split_strength[3][3, 0, 24], self.model.default_split_strength)
 
-    def test_split_strength_defauls(self):
+    def test_split_strength_defaults(self):
         self.assertEqual(self.model.split_strength[2][0, 0, 8], 0)
