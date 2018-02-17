@@ -38,7 +38,7 @@ class TreeModel(object):
     # Regular expressions for parsing XGBoost model dumps
     LEADING_TABS = re.compile(r"[^\t]")
     INTEGER = r"[0-9]+"
-    FLOAT = r"-?[0-9]+(\.[0-9]+)?"
+    FLOAT = r"-?[0-9]+(\.[0-9]+)?(e[+-]?[0-9]{2})?"
     SPLIT = re.compile(r"f(?P<predictor>" + INTEGER + ")<(?P<bias>" + FLOAT + ")")
     TERMINAL = re.compile(r"leaf=(?P<bias>" + FLOAT + ")")
 
