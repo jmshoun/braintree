@@ -34,6 +34,14 @@ class NeuralModel(object):
             self.saver = tf.train.Saver()
             self.session.run(tf.global_variables_initializer())
 
+    def load_params(self, tree):
+        with self.session.as_default():
+            self.terminal_bias.load(tree.terminal_bias)
+            for depth in range(self.max_depth):
+                self.split_bias[depth].load(tree.split_bias[depth])
+                self.split_strength[depth].load(tree.split_strength[depth])
+                self.split_weight[depth].load(tree.split_weight[depth])
+
     def predict(self, data):
         predictions = []
         for predictors, _ in data.to_array_generator(self.batch_size):
