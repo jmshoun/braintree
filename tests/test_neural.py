@@ -23,10 +23,8 @@ class NeuralTest(unittest.TestCase):
         self.assertListEqual(predictions.tolist(), [0.] * 72)
 
     def test_model_predictions_initial(self):
-        starting_tree = tree.TreeModel(concrete_train.to_dmatrix(), concrete_test.to_dmatrix(),
-                                       max_depth=4, num_trees=25, default_split_strength=30)
-        starting_tree.fit()
-        starting_tree.model.dump_model("foo.txt")
+        starting_tree = tree.TreeModel(max_depth=4, num_trees=25, default_split_strength=30)
+        starting_tree.fit(concrete_train.to_dmatrix(), concrete_test.to_dmatrix())
         model_ = neural.NeuralModel(7, max_depth=4, num_trees=25)
         model_.load_params(starting_tree)
         tree_predictions = starting_tree.model.predict(concrete_test.to_dmatrix())

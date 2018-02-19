@@ -12,9 +12,8 @@ concrete_train, concrete_test = concrete_data.split(0.7)
 class TreeTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.model = tree.TreeModel(concrete_train.to_dmatrix(), concrete_test.to_dmatrix(),
-                                   max_depth=4, num_trees=25)
-        cls.model.fit()
+        cls.model = tree.TreeModel(max_depth=4, num_trees=25)
+        cls.model.fit(concrete_train.to_dmatrix(), concrete_test.to_dmatrix())
 
     def test_parameter_matrix_dimensions(self):
         terminal_bias_shape = list(self.model.terminal_bias.shape)

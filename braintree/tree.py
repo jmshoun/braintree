@@ -23,8 +23,6 @@ class TreeModel(object):
     """Wrapper around a basic XGBoost model.
 
     Attributes:
-        train_data (xgb.DMatrix): Training data for the model.
-        validation_data (xgb.DMatrix): Validation data for the model.
         num_trees (int): Number of trees in the XGBoost model.
         max_depth (int): Maximum depth of each tree in the model.
         default_split_strength (float): Default value of split strength parameters.
@@ -42,11 +40,8 @@ class TreeModel(object):
     SPLIT = re.compile(r"f(?P<predictor>" + INTEGER + ")<(?P<bias>" + FLOAT + ")")
     TERMINAL = re.compile(r"leaf=(?P<bias>" + FLOAT + ")")
 
-    def __init__(self, train_data, validation_data=None, num_trees=50, max_depth=5,
-                 default_split_strength=2.0):
+    def __init__(self, num_trees=50, max_depth=5, default_split_strength=2.0):
         """Default constructor."""
-        self.train_data = train_data
-        self.validation_data = validation_data
         self.num_trees = num_trees
         self.max_depth = max_depth
         self.default_split_strength = default_split_strength
@@ -54,35 +49,34 @@ class TreeModel(object):
         # Placeholders for extracted model parameters.
         num_terminal_nodes = 2 ** self.max_depth
         self.terminal_bias = _zeros(num_terminal_nodes, 1, self.num_trees)
-        self.split_weight, self.split_bias, self.split_strength = self._initialize_splits()
+        self.split_weight, self.split_bias, self.split_strength = None, None, None
 
-    def _initialize_splits(self):
+    def _initialize_splits(self, num_features):
         """Initializes split matrices with appropriate dimensions and values."""
-        num_features = self.train_data.num_col()
         # There is one set of split weighs for each layer of each tree; thus the matrices.
-        split_weight = []
-        split_bias = []
-        split_strength = []
+        self.split_weight = []
+        self.split_bias = []
+        self.split_strength = []
         for depth in range(self.max_depth):
-            split_weight += [_zeros(2 ** depth, num_features, self.num_trees)]
-            split_bias += [_zeros(2 ** depth, 1, self.num_trees)]
-            split_strength += [_zeros(2 ** depth, 1, self.num_trees)]
-        return split_weight, split_bias, split_strength
+            self.split_weight += [_zeros(2 ** depth, num_features, self.num_trees)]
+            self.split_bias += [_zeros(2 ** depth, 1, self.num_trees)]
+            self.split_strength += [_zeros(2 ** depth, 1, self.num_trees)]
 
-    def fit(self, seed=0):
+    def fit(self, train_data, validation_data, seed=0):
         """Fits the model.
 
         Returns:
             xgbModel: The fitted model.
         """
-        evaluation_pairs = [(self.train_data, "train"),
-                            (self.validation_data, "validation")]
+        evaluation_pairs = [(train_data, "train"),
+                            (validation_data, "validation")]
         training_parameters = {"seed": seed,
                                "max_depth": self.max_depth,
                                "silent": 1,
                                "base_score": 0.0}
-        self.model = xgb.train(training_parameters, self.train_data, self.num_trees,
+        self.model = xgb.train(training_parameters, train_data, self.num_trees,
                                evals=evaluation_pairs, verbose_eval=False)
+        self._initialize_splits(train_data.num_col())
         self._parse_parameters()
         return self
 
