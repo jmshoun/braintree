@@ -15,8 +15,9 @@ class BrainTree(object):
         neural (NeuralModel): Continuous extension of GBM model trained via TensorFlow.
     """
 
-    def __init__(self, num_trees, max_depth=4, subsample=0.5, default_split_strength=2,
-                 train_steps=1000, learning_rate=0.01, batch_size=32, dropout_rate=0.5):
+    def __init__(self, num_trees, standardize=True, max_depth=4, subsample=0.5,
+                 default_split_strength=2, train_steps=1000, learning_rate=0.01, batch_size=32,
+                 dropout_rate=0.5):
         """Default constructor.
         
         Args:
@@ -35,6 +36,7 @@ class BrainTree(object):
         # We can't initialize the neural model until we know the number of predictors.
         self.neural = None
         self.train_steps = train_steps
+        self.standard_factors = {} if standardize else None
         self._neural_config = {"num_trees": num_trees, "max_depth": max_depth,
                                "learning_rate": learning_rate, "batch_size": batch_size,
                                "dropout_rate": dropout_rate}
@@ -48,6 +50,10 @@ class BrainTree(object):
             print_every (int): Number of training steps after which to print model diagnostics.
             seed (int): Seed for the random generators at all stages of model training.
         """
+        if self.standard_factors is not None:
+            train_data.standardize()
+            self.standard_factors = train_data.standard_factors
+            validation_data.standardize(self.standard_factors)
         self.tree.fit(train_data.to_dmatrix(), validation_data.to_dmatrix(), seed=seed)
         self.neural = neural.NeuralModel(train_data.num_features, **self._neural_config)
         self.neural.load_params(self.tree)
@@ -63,4 +69,10 @@ class BrainTree(object):
         """
         if self.neural is None:
             raise NotFitError("The model has not been fit yet!")
-        return self.neural.predict(data)
+        if self.standard_factors:
+            data.standardize(self.standard_factors)
+        predictions = self.neural.predict(data)
+        if self.standard_factors:
+            predictions = (predictions * self.standard_factors["response_sds"][0]
+                           + self.standard_factors["predictor_means"][0])
+        return predictions
