@@ -106,13 +106,14 @@ class BrainTreeData(object):
         np.random.seed(seed)
         np.random.shuffle(self.responses)
 
-    def to_array_generator(self, batch_size, all_=True, response_number=0):
+    def to_array_generator(self, batch_size, all_=True, repeat=False, response_number=0):
         """Creates a generator that iterates over the data set and yields batch-sized ndarrays.
 
         Args:
             batch_size (int): The size of each batch.
             all_ (bool): If True, return every observation. Otherwise, return the most observations
                 that are cleanly divisble by the batch size.
+            repeat (bool): If True, continue looping through the data set ad infinitum.
             response_number (int): The index of the response to return.
         Returns:
             Generator of (predictor, response) ndarray pairs.
@@ -121,17 +122,26 @@ class BrainTreeData(object):
         num_observations = self.predictors.shape[0]
         num_features = self.predictors.shape[1]
         new_predictor_shape = [1, batch_size, num_features]
-        while ndx + batch_size <= num_observations:
-            yield (self.predictors[ndx:(ndx + batch_size), :].reshape(new_predictor_shape),
-                   self.responses[ndx:(ndx + batch_size), response_number])
+        # Main loop through the data
+        while True:
+            if ndx + batch_size <= num_observations:
+                yield (self.predictors[ndx:(ndx + batch_size), :].reshape(new_predictor_shape),
+                       self.responses[ndx:(ndx + batch_size), response_number])
+            elif all_:
+                # Annoying edge case when num_observations % batch_size != 0
+                remainder_shape = [1, num_observations - ndx, num_features]
+                num_fills = batch_size - (num_observations - ndx)
+                fill_shape = [1, num_fills, num_features]
+                yield (np.hstack([self.predictors[ndx:, :].reshape(remainder_shape),
+                                  self.predictors[:num_fills, :].reshape(fill_shape)]),
+                       np.hstack([self.responses[ndx:, response_number],
+                                  self.responses[:num_fills, response_number]]))
+            # Increment ndx and check for halting conditions
             ndx += batch_size
-        if ndx < num_observations and all_:
-            remainder_shape = [1, num_observations % batch_size, num_features]
-            num_fills = batch_size - (num_observations % batch_size)
-            fill_predictors = np.zeros((1, num_fills, num_features))
-            fill_responses = np.zeros((num_fills, ))
-            yield (np.hstack([self.predictors[ndx:, :].reshape(remainder_shape), fill_predictors]),
-                   np.hstack([self.responses[ndx:, response_number], fill_responses]))
+            if ndx >= num_observations and not repeat:
+                break
+            else:
+                ndx %= num_observations
 
     def to_dmatrix(self, response_number=0):
         """Creates an XGBoost DMatrix representation of the data.
