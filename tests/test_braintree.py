@@ -20,6 +20,6 @@ class BrainTreeTest(unittest.TestCase):
         model = braintree.BrainTree(num_trees=15)
         with self.assertRaises(braintree.NotFitError):
             model.predict(concrete_test)
-        model.fit(concrete_train, concrete_test)
+        model.fit(concrete_train, concrete_test, print_every=250)
         predictions = model.predict(concrete_test)
         self.assertEqual(len(predictions), 31)

@@ -49,6 +49,8 @@ class NeuralModel(object):
         while current_step < train_steps:
             self._train_steps(train_generator, num_steps)
             current_step += num_steps
+            if print_every > 0:
+                print("{:>7} - {:0.4f}".format(current_step, self.score(validation_data)))
 
     def _train_steps(self, train_generator, num_steps):
         for _ in range(num_steps):
@@ -57,6 +59,16 @@ class NeuralModel(object):
                           "response:0": responses,
                           "dropout:0": self.dropout_rate}
             _ = self.session.run(self.optimizer, feed_dict=input_dict)
+
+    def score(self, data):
+        scores = []
+        for (predictors, responses) in data.to_array_generator(self.batch_size):
+            input_dict = {"predictors:0": predictors,
+                          "response:0": responses,
+                          "dropout:0": 1.0}
+            loss = self.session.run([self.loss], feed_dict=input_dict)
+            scores.append(loss)
+        return np.mean(scores)
 
     def predict(self, data):
         predictions = []
