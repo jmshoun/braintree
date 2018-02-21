@@ -42,6 +42,22 @@ class NeuralModel(object):
                 self.split_strength[depth].load(tree.split_strength[depth])
                 self.split_weight[depth].load(tree.split_weight[depth])
 
+    def train(self, train_data, validation_data, train_steps, print_every=0):
+        current_step = 0
+        train_generator = train_data.to_array_generator(self.batch_size, repeat=True)
+        num_steps = print_every if print_every > 0 else train_steps
+        while current_step < train_steps:
+            self._train_steps(train_generator, num_steps)
+            current_step += num_steps
+
+    def _train_steps(self, train_generator, num_steps):
+        for _ in range(num_steps):
+            predictors, responses = next(train_generator)
+            input_dict = {"predictors:0": predictors,
+                          "response:0": responses,
+                          "dropout:0": self.dropout_rate}
+            _ = self.session.run(self.optimizer, feed_dict=input_dict)
+
     def predict(self, data):
         predictions = []
         for predictors, _ in data.to_array_generator(self.batch_size):
