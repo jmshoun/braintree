@@ -25,6 +25,7 @@ class TreeModel(object):
     Attributes:
         num_trees (int): Number of trees in the XGBoost model.
         max_depth (int): Maximum depth of each tree in the model.
+        subsample (float): Subsampling rate when training the model.
         default_split_strength (float): Default value of split strength parameters.
         model (xgb.Booster): Fitted XGBoost model.
         terminal_bias (numpy.ndarray): Biases (constants) for values of the terminal nodes.
@@ -40,10 +41,11 @@ class TreeModel(object):
     SPLIT = re.compile(r"f(?P<predictor>" + INTEGER + ")<(?P<bias>" + FLOAT + ")")
     TERMINAL = re.compile(r"leaf=(?P<bias>" + FLOAT + ")")
 
-    def __init__(self, num_trees=50, max_depth=5, default_split_strength=2.0):
+    def __init__(self, num_trees=50, max_depth=5, subsample=1.0, default_split_strength=2.0):
         """Default constructor."""
         self.num_trees = num_trees
         self.max_depth = max_depth
+        self.subsample = subsample
         self.default_split_strength = default_split_strength
         self.model = None
         # Placeholders for extracted model parameters.
@@ -72,6 +74,7 @@ class TreeModel(object):
                             (validation_data, "validation")]
         training_parameters = {"seed": seed,
                                "max_depth": self.max_depth,
+                               "subsample": self.subsample,
                                "silent": 1,
                                "base_score": 0.0}
         self.model = xgb.train(training_parameters, train_data, self.num_trees,
