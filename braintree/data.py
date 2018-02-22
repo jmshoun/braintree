@@ -10,6 +10,7 @@ import copy
 
 import xgboost as xgb
 import numpy as np
+import pandas as pd
 
 
 class BrainTreeData(object):
@@ -26,6 +27,14 @@ class BrainTreeData(object):
         self.responses = self._force_2d(responses.copy())
         self._assert_predictors_and_responses_same_size()
         self.standard_factors = {}
+
+    @classmethod
+    def from_csv(cls, filename, predictor_names, response_names):
+        """Constructor from a CSV file."""
+        data = pd.read_csv(filename)
+        predictors = data.loc[:, predictor_names].values
+        responses = data.loc[:, response_names].values
+        return cls(predictors, responses)
 
     @property
     def num_observations(self):
