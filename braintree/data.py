@@ -20,6 +20,7 @@ class BrainTreeData(object):
         predictors (numpy.ndarray): n by k numeric matrix of predictors.
         responses (numpy.ndarray): n by m numeric matrix of responses.
         standard_factors (dict): Dictionary of factors to standardize raw data by columns.
+        standardized (bool): Whether the data has been standardized.
     """
     def __init__(self, predictors, responses):
         """Default constructor."""
@@ -27,6 +28,7 @@ class BrainTreeData(object):
         self.responses = self._force_2d(responses.copy())
         self._assert_predictors_and_responses_same_size()
         self.standard_factors = {}
+        self.standardized = False
 
     @classmethod
     def from_csv(cls, filename, predictor_names, response_names):
@@ -61,6 +63,7 @@ class BrainTreeData(object):
                            / self.standard_factors["predictor_sds"])
         self.responses = ((self.responses - self.standard_factors["response_means"])
                           / self.standard_factors["response_sds"])
+        self.standardized = True
 
     def _compute_standard_factors(self):
         """Compute standardization factors from the data itself."""
