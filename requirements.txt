@@ -1,0 +1,4 @@
+pandas
+numpy
+tensorflow>=1.4.1
+xgboost>=0.7.post3
