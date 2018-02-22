@@ -1,3 +1,5 @@
+import copy
+
 from . import neural
 from . import tree
 
@@ -51,8 +53,10 @@ class BrainTree(object):
             seed (int): Seed for the random generators at all stages of model training.
         """
         if self.standard_factors is not None:
+            train_data = copy.deepcopy(train_data)
             train_data.standardize()
             self.standard_factors = train_data.standard_factors
+            validation_data = copy.deepcopy(validation_data)
             validation_data.standardize(self.standard_factors)
         self.tree.fit(train_data.to_dmatrix(), validation_data.to_dmatrix(), seed=seed)
         self.neural = neural.NeuralModel(train_data.num_features, **self._neural_config)
@@ -69,10 +73,11 @@ class BrainTree(object):
         """
         if self.neural is None:
             raise NotFitError("The model has not been fit yet!")
-        if self.standard_factors:
+        if self.standard_factors and not data.standardized:
+            data = copy.deepcopy(data)
             data.standardize(self.standard_factors)
         predictions = self.neural.predict(data)
         if self.standard_factors:
             predictions = (predictions * self.standard_factors["response_sds"][0]
-                           + self.standard_factors["predictor_means"][0])
+                           + self.standard_factors["response_means"][0])
         return predictions
