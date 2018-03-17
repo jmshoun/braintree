@@ -53,16 +53,17 @@ class TreeModel(object):
         # Placeholders for extracted model parameters.
         num_terminal_nodes = 2 ** self.max_depth
         self.terminal_bias = _zeros(num_terminal_nodes, 1, self.num_trees)
+        self.num_predictors = None
         self.split_weight, self.split_bias, self.split_strength = None, None, None
 
-    def _initialize_splits(self, num_features):
+    def _initialize_splits(self):
         """Initializes split matrices with appropriate dimensions and values."""
         # There is one set of split weighs for each layer of each tree; thus the matrices.
         self.split_weight = []
         self.split_bias = []
         self.split_strength = []
         for depth in range(self.max_depth):
-            self.split_weight += [_zeros(2 ** depth, num_features, self.num_trees)]
+            self.split_weight += [_zeros(2 ** depth, self.num_predictors, self.num_trees)]
             self.split_bias += [_zeros(2 ** depth, 1, self.num_trees)]
             self.split_strength += [_zeros(2 ** depth, 1, self.num_trees)]
 
@@ -77,13 +78,22 @@ class TreeModel(object):
         training_parameters = {"seed": seed,
                                "max_depth": self.max_depth,
                                "subsample": self.subsample,
-                               "silent": 1,
+                               "silent": 1, "eta": self.eta,
                                "base_score": 0.0}
         self.model = xgb.train(training_parameters, train_data, self.num_trees,
                                evals=evaluation_pairs, verbose_eval=False)
-        self._initialize_splits(train_data.num_col())
+        self.num_predictors = train_data.num_col()
+        self._initialize_splits()
         self._parse_parameters()
         return self
+
+    def add_noise(self, split_weight_noise, split_bias_noise):
+        split_weight_sd = split_weight_noise / np.sqrt(self.num_predictors)
+        for depth in range(self.max_depth):
+            self.split_weight[depth] += np.random.normal(scale=split_weight_sd,
+                                                         size=self.split_weight[depth].shape)
+            self.split_bias[depth] += np.random.normal(scale=split_bias_noise,
+                                                       size=self.split_bias[depth].shape)
 
     def _parse_parameters(self):
         """Parses the parameters of an XGBoost model from a dump of the tree lines."""

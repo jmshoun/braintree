@@ -36,6 +36,8 @@ class NeuralModel(object):
 
     def load_params(self, tree):
         with self.session.as_default():
+            self.terminal_weight.load(np.random.normal(scale=terminal_weight_sd,
+                                                       size=self.terminal_weight.shape))
             self.terminal_bias.load(tree.terminal_bias)
             for depth in range(self.max_depth):
                 self.split_bias[depth].load(tree.split_bias[depth])

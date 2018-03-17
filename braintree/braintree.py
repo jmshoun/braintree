@@ -19,7 +19,8 @@ class BrainTree(object):
 
     def __init__(self, num_trees, standardize=True, max_depth=4, subsample=0.5, eta=0.1,
                  default_split_strength=2, train_steps=1000, learning_rate=0.01, batch_size=32,
-                 dropout_rate=0.5):
+                 dropout_rate=0.5, split_weight_noise=0.01, split_bias_noise=0.01,
+                 terminal_weight_noise=0.01):
         """Default constructor.
         
         Args:
@@ -42,6 +43,9 @@ class BrainTree(object):
         self._neural_config = {"num_trees": num_trees, "max_depth": max_depth,
                                "learning_rate": learning_rate, "batch_size": batch_size,
                                "dropout_rate": dropout_rate}
+        self._noise_config = {"split_weight_noise": split_weight_noise,
+                              "split_bias_noise": split_bias_noise,
+                              "terminal_weight_noise": terminal_weight_noise}
 
     def fit(self, train_data, validation_data, print_every=0, seed=0):
         """Fits the model to provided train and validation data sets.
@@ -60,7 +64,7 @@ class BrainTree(object):
             validation_data.standardize(self.standard_factors)
         self.tree.fit(train_data.to_dmatrix(), validation_data.to_dmatrix(), seed=seed)
         self.neural = neural.NeuralModel(train_data.num_features, **self._neural_config)
-        self.neural.load_params(self.tree)
+        self.neural.load_params(self.tree, **self._noise_config)
         self.neural.train(train_data, validation_data, self.train_steps, print_every)
 
     def predict(self, data):
