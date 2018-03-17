@@ -89,6 +89,15 @@ class BrainTreeData(object):
         if predictor_rows != response_rows:
             raise ValueError("predictors and responses must have the same number of rows.")
 
+    def add_noise_columns(self, num_columns):
+        """Adds some columns of uncorrelated Gaussian noise to the predictors.
+        
+        Args:
+            num_columns (int): Number of columns to add to the data set.
+        """
+        noise = np.random.normal(0, 1, [self.num_observations, num_columns])
+        self.predictors = np.concatenate([self.predictors, noise], axis=1)
+
     def split(self, split_fraction):
         """Splits a BrainTreeData object into two disjoint data sets.
 
