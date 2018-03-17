@@ -17,7 +17,7 @@ class BrainTree(object):
         neural (NeuralModel): Continuous extension of GBM model trained via TensorFlow.
     """
 
-    def __init__(self, num_trees, standardize=True, max_depth=4, subsample=0.5,
+    def __init__(self, num_trees, standardize=True, max_depth=4, subsample=0.5, eta=0.1,
                  default_split_strength=2, train_steps=1000, learning_rate=0.01, batch_size=32,
                  dropout_rate=0.5):
         """Default constructor.
@@ -34,7 +34,7 @@ class BrainTree(object):
             dropout_rate (float): Dropout rate when training the neural model, (0, 1].        
         """
         self.tree = tree.TreeModel(num_trees, max_depth, subsample,
-                                   default_split_strength)
+                                   default_split_strength, eta)
         # We can't initialize the neural model until we know the number of predictors.
         self.neural = None
         self.train_steps = train_steps

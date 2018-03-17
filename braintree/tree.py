@@ -41,12 +41,14 @@ class TreeModel(object):
     SPLIT = re.compile(r"f(?P<predictor>" + INTEGER + ")<(?P<bias>" + FLOAT + ")")
     TERMINAL = re.compile(r"leaf=(?P<bias>" + FLOAT + ")")
 
-    def __init__(self, num_trees=50, max_depth=5, subsample=1.0, default_split_strength=2.0):
+    def __init__(self, num_trees=50, max_depth=5, subsample=1.0, default_split_strength=2.0,
+                 eta=0.1):
         """Default constructor."""
         self.num_trees = num_trees
         self.max_depth = max_depth
         self.subsample = subsample
         self.default_split_strength = default_split_strength
+        self.eta = eta
         self.model = None
         # Placeholders for extracted model parameters.
         num_terminal_nodes = 2 ** self.max_depth
