@@ -19,6 +19,10 @@ def _zeros(*shape):
     return np.zeros(shape)
 
 
+class NotFitError(Exception):
+    pass
+
+
 class TreeModel(object):
     """Wrapper around a basic XGBoost model.
 
@@ -86,6 +90,17 @@ class TreeModel(object):
         self._initialize_splits()
         self._parse_parameters()
         return self
+
+    @property
+    def importance(self):
+        if not self.model:
+            raise NotFitError("The tree model has not been fit yet!")
+        importance_dict = self.model.get_score(importance_type="gain")
+        importance = np.zeros(self.num_predictors)
+        for var_name, imp in importance_dict.items():
+            var_ndx = int(var_name[1:])
+            importance[var_ndx] = imp
+        return importance / np.sum(importance)
 
     def add_noise(self, split_weight_noise, split_bias_noise):
         split_weight_sd = split_weight_noise / np.sqrt(self.num_predictors)
