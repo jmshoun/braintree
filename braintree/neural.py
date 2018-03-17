@@ -3,6 +3,8 @@
 import tensorflow as tf
 import numpy as np
 
+_GRADIENT_CAP_PERCENTILE = 90
+
 
 def _zeros(*shape):
     """Creates a TensorFlow Variable of the given shape filled with zeros."""
@@ -26,6 +28,7 @@ class NeuralModel(object):
         self.split_weight = self.split_bias = self.split_strength = None
         self.terminal_weight = self.terminal_bias = None
         self.predictions = self.loss = self.optimizer = None
+        self.fitted_gradient_limits = None
         # Graph building
         self.graph = tf.Graph()
         with self.graph.as_default():  # pylint: disable=not-context-manager
@@ -34,7 +37,19 @@ class NeuralModel(object):
             self.saver = tf.train.Saver()
             self.session.run(tf.global_variables_initializer())
 
-    def load_params(self, tree):
+    @property
+    def num_gradients(self):
+        return 3 * self.max_depth + 2
+
+    @property
+    def default_gradient_limits(self):
+        max_float = np.finfo(np.float32).max
+        return np.array([max_float] * self.num_gradients)
+
+    def load_params(self, tree, split_weight_noise=0.0, split_bias_noise=0.0,
+                    terminal_weight_noise=0.0):
+        terminal_weight_sd = terminal_weight_noise / np.sqrt(self.num_features)
+        tree.add_noise(split_weight_noise, split_bias_noise)
         with self.session.as_default():
             self.terminal_weight.load(np.random.normal(scale=terminal_weight_sd,
                                                        size=self.terminal_weight.shape))
@@ -45,6 +60,7 @@ class NeuralModel(object):
                 self.split_weight[depth].load(tree.split_weight[depth])
 
     def train(self, train_data, validation_data, train_steps, print_every=0):
+        self._calibrate(train_data)
         current_step = 0
         train_generator = train_data.to_array_generator(self.batch_size, repeat=True)
         num_steps = print_every if print_every > 0 else train_steps
@@ -54,13 +70,30 @@ class NeuralModel(object):
             if print_every > 0:
                 print("{:>7} - {:0.4f}".format(current_step, self.score(validation_data)))
 
+    def _calibrate(self, train_data, num_steps=100):
+        train_generator = train_data.to_array_generator(self.batch_size, repeat=True)
+        gradients = []
+        for _ in range(num_steps):
+            predictors, responses = next(train_generator)
+            input_dict = {"predictors:0": predictors,
+                          "response:0": responses,
+                          "dropout:0": self.dropout_rate,
+                          "gradient_limits:0": self.default_gradient_limits}
+            _, gradient = self.session.run([self.train_op, self.gradient_norms],
+                                           feed_dict=input_dict)
+            gradients += [gradient]
+        gradient_array = np.array(gradients)
+        gradient_caps = np.percentile(gradient_array, _GRADIENT_CAP_PERCENTILE, axis=0)
+        self.fitted_gradient_limits = gradient_caps
+
     def _train_steps(self, train_generator, num_steps):
         for _ in range(num_steps):
             predictors, responses = next(train_generator)
             input_dict = {"predictors:0": predictors,
                           "response:0": responses,
-                          "dropout:0": self.dropout_rate}
-            _ = self.session.run(self.optimizer, feed_dict=input_dict)
+                          "dropout:0": self.dropout_rate,
+                          "gradient_limits:0": self.fitted_gradient_limits}
+            _ = self.session.run([self.train_op], feed_dict=input_dict)
 
     def score(self, data):
         scores = []
@@ -109,7 +142,15 @@ class NeuralModel(object):
 
     def _build_optimizer(self):
         self.loss = tf.losses.mean_squared_error(self.predictions, self.response)
-        self.optimizer = tf.train.AdagradOptimizer(self.learning_rate).minimize(self.loss)
+        optimizer = tf.train.AdagradOptimizer(self.learning_rate)
+        raw_gradients = optimizer.compute_gradients(self.loss)
+        self.gradient_norms = [tf.norm(grad) for grad, _ in raw_gradients]
+        self.gradient_limits = tf.placeholder(tf.float32, shape=[self.num_gradients],
+                                              name="gradient_limits")
+        max_limit_ratio = tf.reduce_max(self.gradient_norms / self.gradient_limits)
+        clip_ratio = tf.maximum(max_limit_ratio, 1.0)
+        clipped_gradients = [(grad / clip_ratio, var) for grad, var in raw_gradients]
+        self.train_op = optimizer.apply_gradients(clipped_gradients)
 
     def _build_split_prob_layer(self, depth):
         affine_logit = tf.matmul(tf.gather(self.predictors, [0] * (2 ** depth)),
