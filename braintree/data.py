@@ -31,18 +31,23 @@ class BrainTreeData(object):
         self.standardized = False
 
     @classmethod
-    def from_csv(cls, filename, response_names, feature_names=None, predictor_names=None,
-                 header=False, delimiter=","):
+    def from_csv(cls, filename, response_names, feature_names=None, header=False, delimiter=","):
         """Constructor from a CSV file."""
-        data = pd.read_csv(filename, delimiter=delimiter, header=header)
-        if predictor_names is None:
-            if feature_names is None and not header:
-                raise ValueError("feature_names or predictor_names must be supplied, " +
-                                 "or header must be True.")
-            feature_names = data.columns.values if feature_names is None else feature_names
-            predictor_names = list(set(feature_names) - set(response_names))
-        predictors = data.loc[:, predictor_names].values
-        responses = data.loc[:, response_names].values
+        if not header and feature_names is None:
+            raise ValueError("header must be true or feature_names must not be None!")
+        pandas_header = 0 if header else None
+        df = pd.read_csv(filename, delimiter=delimiter, header=pandas_header)
+        if not header:
+            df.columns = feature_names
+        return cls.from_data_frame(df, response_names)
+
+    @classmethod
+    def from_data_frame(cls, df, response_names):
+        """Constructor from a Pandas DataFrame."""
+        feature_names = df.columns.values
+        predictor_names = list(set(feature_names) - set(response_names))
+        predictors = df.loc[:, predictor_names].values
+        responses = df.loc[:, response_names].values
         return cls(predictors, responses)
 
     @property
