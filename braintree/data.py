@@ -22,11 +22,14 @@ class BrainTreeData(object):
         standard_factors (dict): Dictionary of factors to standardize raw data by columns.
         standardized (bool): Whether the data has been standardized.
     """
-    def __init__(self, predictors, responses):
+    def __init__(self, predictors, responses, predictor_names=None, response_names=None):
         """Default constructor."""
         self.predictors = self._force_2d(predictors.copy())
         self.responses = self._force_2d(responses.copy())
+        self.predictor_names = predictor_names
+        self.response_names = response_names
         self._assert_predictors_and_responses_same_size()
+        self._assert_correct_name_length()
         self.standard_factors = {}
         self.standardized = False
 
@@ -37,7 +40,7 @@ class BrainTreeData(object):
             raise ValueError("header must be true or feature_names must not be None!")
         pandas_header = 0 if header else None
         df = pd.read_csv(filename, delimiter=delimiter, header=pandas_header)
-        if not header:
+        if feature_names is not None:
             df.columns = feature_names
         return cls.from_data_frame(df, response_names)
 
@@ -48,7 +51,7 @@ class BrainTreeData(object):
         predictor_names = list(set(feature_names) - set(response_names))
         predictors = df.loc[:, predictor_names].values
         responses = df.loc[:, response_names].values
-        return cls(predictors, responses)
+        return cls(predictors, responses, predictor_names, response_names)
 
     @property
     def num_observations(self):
@@ -101,6 +104,13 @@ class BrainTreeData(object):
         if predictor_rows != response_rows:
             raise ValueError("predictors and responses must have the same number of rows.")
 
+    def _assert_correct_name_length(self):
+        """Ensures the length of predictor_names and response_names are right."""
+        if self.predictor_names is not None and len(self.predictor_names) != self.num_features:
+            raise ValueError("predictor_names must be the same length as the number of predictors!")
+        if self.response_names is not None and len(self.response_names) != self.responses.shape[1]:
+            raise ValueError("response_names must be the same length as the number of responses!")
+
     def add_noise_columns(self, num_columns):
         """Adds some columns of uncorrelated Gaussian noise to the predictors.
         
@@ -125,8 +135,10 @@ class BrainTreeData(object):
         split_row = int(self.predictors.shape[0] * split_fraction)
         if split_row == 0:
             raise ValueError("split_value is too extreme; one data set is empty.")
-        return (BrainTreeData(self.predictors[:split_row, :], self.responses[:split_row, :]),
-                BrainTreeData(self.predictors[split_row:, :], self.responses[split_row:, :]))
+        return (BrainTreeData(self.predictors[:split_row, :], self.responses[:split_row, :],
+                              self.predictor_names, self.response_names),
+                BrainTreeData(self.predictors[split_row:, :], self.responses[split_row:, :],
+                              self.predictor_names, self.response_names))
 
     def shuffle(self, seed=0):
         """Randomly shuffles the order of the observations in the data set.
