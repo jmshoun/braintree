@@ -31,9 +31,16 @@ class BrainTreeData(object):
         self.standardized = False
 
     @classmethod
-    def from_csv(cls, filename, predictor_names, response_names):
+    def from_csv(cls, filename, response_names, feature_names=None, predictor_names=None,
+                 header=False, delimiter=","):
         """Constructor from a CSV file."""
-        data = pd.read_csv(filename)
+        data = pd.read_csv(filename, delimiter=delimiter, header=header)
+        if predictor_names is None:
+            if feature_names is None and not header:
+                raise ValueError("feature_names or predictor_names must be supplied, " +
+                                 "or header must be True.")
+            feature_names = data.columns.values if feature_names is None else feature_names
+            predictor_names = list(set(feature_names) - set(response_names))
         predictors = data.loc[:, predictor_names].values
         responses = data.loc[:, response_names].values
         return cls(predictors, responses)
@@ -96,7 +103,8 @@ class BrainTreeData(object):
             num_columns (int): Number of columns to add to the data set.
         """
         noise = np.random.normal(0, 1, [self.num_observations, num_columns])
-        self.predictors = np.concatenate([self.predictors, noise], axis=1)
+        new_predictors = np.concatenate([self.predictors, noise], axis=1)
+        return BrainTreeData(new_predictors, self.responses)
 
     def split(self, split_fraction):
         """Splits a BrainTreeData object into two disjoint data sets.
@@ -126,6 +134,7 @@ class BrainTreeData(object):
         # Second call to seed to ensure permutation for predictors and responses is the same.
         np.random.seed(seed)
         np.random.shuffle(self.responses)
+        return self
 
     def to_array_generator(self, batch_size, all_=True, repeat=False, response_number=0):
         """Creates a generator that iterates over the data set and yields batch-sized ndarrays.
