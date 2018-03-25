@@ -58,10 +58,33 @@ class BrainTreeData(object):
         """The number of observations in the data set."""
         return self.predictors.shape[0]
 
-    @property
+    @property''
     def num_features(self):
         """The number of features (predictors) in the data set."""
         return self.predictors.shape[1]
+
+    def drop_columns(self, columns):
+        """Drop specified columns from a data set.
+        
+        Args:
+            columns (list): List of predictor columns to drop. Can be a mix of integer indices
+                and strings of column names.
+        """
+        column_indices = []
+        for column in columns:
+            if isinstance(column, int):
+                if column >= self.num_features:
+                    raise ValueError(f"Can't delete column #{column}; "
+                                     + f"data only has {self.num_features} columns!")
+                column_indices += [column]
+            else:
+                ndx_lookup = [(i, name) for i, name in enumerate(self.predictor_names)
+                              if name == column]
+                if len(ndx_lookup) == 0:
+                    raise ValueError(f"Provided column name {column} is not in the data set!")
+                column_indices += [ndx_lookup[0][0]]
+        self.predictors = np.delete(self.predictors, column_indices, axis=1)
+        return self
 
     def standardize(self, standard_factors=None):
         """Standardize the data so it has zero mean and unit variance.
