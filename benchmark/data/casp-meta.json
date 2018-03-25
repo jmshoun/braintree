@@ -1,0 +1,10 @@
+{
+  "name": "casp",
+  "extension": "csv",
+  "url": "http://archive.ics.uci.edu/ml/machine-learning-databases/00265/CASP.csv",
+  "header": true,
+  "features": ["residue_size", "surface_area", "non_polar_exposed_area", "non_polar_residue_area",
+    "non_polar_residue_part_area", "mass_weighted_area", "average_area_deviation",
+    "euclidean_distance", "secondary_structure_penalty", "spatial_distribution_constraints"],
+  "responses": ["residue_size"]
+}

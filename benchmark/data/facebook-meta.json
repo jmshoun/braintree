@@ -1,0 +1,23 @@
+{
+  "name": "facebook",
+  "extension": "zip",
+  "url": "https://archive.ics.uci.edu/ml/machine-learning-databases/00363/Dataset.zip",
+  "filenames": {
+    "train": "Dataset/Training/Features_Variant_3.csv",
+    "test": "Dataset/Testing/Features_TestSet.csv"
+  },
+  "header": true,
+  "delimiter": ",",
+  "features": [
+    "page_likes", "page_checkins", "page_talks", "page_category", "derived_01", "derived_02",
+    "derived_03", "derived_04", "derived_05", "derived_06", "derived_07", "derived_08",
+    "derived_09", "derived_10", "derived_11", "derived_12", "derived_13", "derived_14",
+    "derived_15", "derived_16", "derived_17", "derived_18", "derived_19", "derived_20",
+    "derived_21", "derived_22", "derived_23", "derived_24", "derived_25", "prior_comments",
+    "comments_last_24h", "comments_penult_24h", "comments_first_24h", "comments_falloff",
+    "base_time", "post_length", "post_share_count", "post_promotion_status", "count_hours",
+    "publish_sunday", "publish_monday", "publish_tuesday", "publish_wednesday", "publish_thursday",
+    "publish_friday", "publish_saturday", "count_sunday", "count_monday", "count_tuesday",
+    "count_wednesday", "count_thursday", "count_friday", "count_saturday", "num_new_comments"],
+  "responses": ["num_new_comments"]
+}

@@ -1,0 +1,8 @@
+{
+  "name": "wine-white",
+  "extension": "csv",
+  "url": "https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-white.csv",
+  "header": true,
+  "delimiter": ";",
+  "responses": ["quality"]
+}
