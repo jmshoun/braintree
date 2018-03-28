@@ -46,13 +46,15 @@ class TreeModel(object):
     TERMINAL = re.compile(r"leaf=(?P<bias>" + FLOAT + ")")
 
     def __init__(self, num_trees=50, max_depth=5, subsample=1.0, default_split_strength=2.0,
-                 eta=0.1):
+                 eta=0.1, min_leaf_weight=1.0, column_subsample=1.0):
         """Default constructor."""
         self.num_trees = num_trees
         self.max_depth = max_depth
         self.subsample = subsample
         self.default_split_strength = default_split_strength
         self.eta = eta
+        self.column_subsample = column_subsample
+        self.min_leaf_weight = min_leaf_weight
         self.model = None
         # Placeholders for extracted model parameters.
         num_terminal_nodes = 2 ** self.max_depth
@@ -82,7 +84,10 @@ class TreeModel(object):
         training_parameters = {"seed": seed,
                                "max_depth": self.max_depth,
                                "subsample": self.subsample,
-                               "silent": 1, "eta": self.eta,
+                               "eta": self.eta,
+                               "min_child_weight": self.min_leaf_weight,
+                               "colsample_bylevel": self.column_subsample,
+                               "silent": 1,
                                "base_score": 0.0}
         self.model = xgb.train(training_parameters, train_data, self.num_trees,
                                evals=evaluation_pairs, verbose_eval=False)

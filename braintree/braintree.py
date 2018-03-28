@@ -18,9 +18,9 @@ class BrainTree(object):
     """
 
     def __init__(self, num_trees, standardize=True, max_depth=4, subsample=0.5, eta=0.1,
-                 default_split_strength=2, train_steps=1000, learning_rate=0.01, batch_size=32,
-                 dropout_rate=0.5, split_weight_noise=0.01, split_bias_noise=0.01,
-                 terminal_weight_noise=0.01):
+                 min_leaf_weight=1.0, column_subsample=1.0, default_split_strength=2,
+                 train_steps=1000, learning_rate=0.01, batch_size=32, dropout_rate=0.5,
+                 split_weight_noise=0.01, split_bias_noise=0.01, terminal_weight_noise=0.01):
         """Default constructor.
         
         Args:
@@ -34,8 +34,8 @@ class BrainTree(object):
             batch_size (int): Batch size for the neural model, >0.
             dropout_rate (float): Dropout rate when training the neural model, (0, 1].        
         """
-        self.tree = tree.TreeModel(num_trees, max_depth, subsample,
-                                   default_split_strength, eta)
+        self.tree = tree.TreeModel(num_trees, max_depth, subsample, default_split_strength,
+                                   eta, min_leaf_weight, column_subsample)
         # We can't initialize the neural model until we know the number of predictors.
         self.neural = None
         self.train_steps = train_steps
