@@ -58,7 +58,7 @@ class BrainTreeData(object):
         """The number of observations in the data set."""
         return self.predictors.shape[0]
 
-    @property''
+    @property
     def num_features(self):
         """The number of features (predictors) in the data set."""
         return self.predictors.shape[1]
